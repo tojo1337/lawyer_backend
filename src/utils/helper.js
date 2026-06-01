@@ -6,10 +6,11 @@ import { transport } from "../config/smtp.config.js";
 
 const cores = os.cpus.length;
 
-export function limiter(arrs) {
+export async function limiter(arrs) {
   const limit = pLimit(cores);
   let arr = arrs.map((item) => limit(() => item));
-  return Promise.all(arr);
+  const resp = await Promise.all(arr);
+  return resp;
 }
 
 export async function sendOtpEmail({ email, otp }) {

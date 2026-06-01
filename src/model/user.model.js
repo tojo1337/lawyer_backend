@@ -3,10 +3,6 @@ import { ModelName } from "../enum/model-name.js";
 
 const UserSchema = new mongoose.Schema(
   {
-    uuid: {
-      type: String,
-      required: true,
-    },
     name: {
       type: String,
       required: true,
@@ -20,7 +16,14 @@ const UserSchema = new mongoose.Schema(
       required: true,
     },
   },
-  { versionKey: false, collection: "user" },
+  {
+    versionKey: false,
+    collection: "user",
+    timestamps: {
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    },
+  },
 );
 
 const UserModel = mongoose.model(ModelName.UserModel, UserSchema);

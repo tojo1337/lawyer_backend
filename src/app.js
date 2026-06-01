@@ -9,12 +9,15 @@ import { route as pingRoute } from "./routes/ping.route.js";
 import dbConnector from "./db/db.connector.js";
 import { agenda } from "./config/agenda.config.js";
 import "./jobs/index.jobs.js";
+import { passport } from "./middleware/passport.middleware.js";
 
 const app = express();
 const server = createServer(app);
 
 async function main() {
   app.use(json());
+  app.use(passport.initialize());
+
   try {
     await dbConnector();
     await agenda.start();
