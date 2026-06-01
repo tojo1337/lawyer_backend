@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { logger } from "../config/pino.config.js";
 import { HttpStatus } from "../enum/http-status.js";
 
 const route = Router();
