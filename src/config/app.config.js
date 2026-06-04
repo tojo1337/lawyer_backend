@@ -1,5 +1,5 @@
 export const appConfig = Object.freeze({
-  apiV1: "/api/v1",
+  baseUrl: process.env.BASE_URL,
   port: process.env.PORT,
   release: process.env.RELEASE,
   jwtSecret: process.env.SECRET,
@@ -8,5 +8,7 @@ export const appConfig = Object.freeze({
   smtpPort: process.env.SMTP_PORT,
   smtpUser: process.env.SMTP_USER,
   smtpPass: process.env.SMTP_PASS,
-  smtpFrom: process.env.SMTP_FROM
+  smtpFrom: process.env.SMTP_FROM,
+  googleClientId: process.env.GOOGLE_CLIENT_ID,
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
 });

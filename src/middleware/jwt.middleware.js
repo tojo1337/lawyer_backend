@@ -1,5 +1,5 @@
 import { HttpStatus } from "../enum/http-status.js";
-import { passport } from "./passport.middleware.js";
+import { passport } from "../config/passport.config.js";
 
 // Jwt token middleware to retrun json response after passport validation
 export default function jwtMiddleware(req, res, next) {

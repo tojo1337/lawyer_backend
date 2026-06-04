@@ -23,6 +23,7 @@
     "nodemailer": "^8.0.10",
     "p-limit": "^7.3.0",
     "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
     "pino": "^10.3.1"
   },

@@ -7,6 +7,7 @@ import { UserModel } from "../model/user.model.js";
 import * as helper from "../utils/helper.js";
 import * as common from "../utils/commons.js";
 import { appConfig } from "../config/app.config.js";
+import { passport } from "../config/passport.config.js";
 
 const route = Router();
 const bcryptRounds = 5;
@@ -88,6 +89,12 @@ route.post("/email-auth-login", async (req, res) => {
       .json({ message: "Something went wrong" });
   }
 });
+
+// This will initiate the login
+route.get(
+  "/google-auth",
+  passport.authenticate("google", { scope: ["profile", "email"] }),
+);
 
 // Handle the token expiry logic in here
 route.get("/email-auth-refresh", async (req, res) => {
