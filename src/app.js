@@ -9,15 +9,12 @@ import { route as pingRoute } from "./routes/ping.route.js";
 import dbConnector from "./db/db.connector.js";
 import { agenda } from "./config/agenda.config.js";
 import "./jobs/index.jobs.js";
-import { passport } from "./config/passport.config.js";
-import { route as webhooks } from "./routes/webhooks.route.js";
 
 const app = express();
 const server = createServer(app);
 
 async function main() {
   app.use(json());
-  app.use(passport.initialize());
 
   try {
     await dbConnector();
@@ -25,7 +22,6 @@ async function main() {
 
     app.use("/test", pingRoute);
     app.use("/auth", authRoute);
-    app.use("/webhooks", webhooks);
 
     server.listen(appConfig.port, () => {
       logger.info(`Server started at port : ${appConfig.port}`);

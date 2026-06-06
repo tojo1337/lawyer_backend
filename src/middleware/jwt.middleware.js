@@ -1,22 +1,32 @@
+import jwt from "jsonwebtoken";
+import { UserModel } from "../model/user.model.js";
 import { HttpStatus } from "../enum/http-status.js";
-import { passport } from "../config/passport.config.js";
+import { appConfig as common } from "../config/app.config.js";
 
-// Jwt token middleware to retrun json response after passport validation
-export default function jwtMiddleware(req, res, next) {
-  return passport.authenticate("jwt", { session: false }, (err, user, info) => {
-    if (err) {
-      return res.status(HttpStatus.SERVER_ERROR).json({
-        message: "Something went wrong",
-      });
-    }
-
-    if (!user) {
-      return res.status(HttpStatus.UN_AUTHORIZED).json({
-        message: info?.message ?? "Unauthorized",
-      });
-    }
-
-    req.user = user;
-    next();
-  })(req, res, next);
+export default async function jwtMiddleware(req, res, next) {
+  try {
+    const token = req.headers.authorization?.split("Bearer ")[1] || "";
+    const decoded = jwt.verify(token, common.jwtSecret);
+    if (!decoded)
+      return res
+        .status(HttpStatus.UN_AUTHORIZED)
+        .json({ message: "UnAuthorized" });
+    const userAcc = await UserModel.findOne({
+      uuid: decoded.uuid || "",
+    }).lean();
+    if (!userAcc)
+      return res
+        .status(HttpStatus.UN_AUTHORIZED)
+        .json({ message: "Unauthorized" });
+    const payload = {
+      uuid: userAcc.uuid,
+      role: userAcc.role.toString(),
+    };
+    req.userData = payload;
+    return next();
+  } catch (err) {
+    return res
+      .status(HttpStatus.UN_AUTHORIZED)
+      .json({ message: "Unauthorized" });
+  }
 }

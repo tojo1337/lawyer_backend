@@ -7,7 +7,8 @@ import { UserModel } from "../model/user.model.js";
 import * as helper from "../utils/helper.js";
 import * as common from "../utils/commons.js";
 import { appConfig } from "../config/app.config.js";
-import { passport } from "../config/passport.config.js";
+import { googleConf as googleClient } from "../config/google-client.config.js";
+import { AuthType } from "../enum/auth-type.js";
 
 const route = Router();
 const bcryptRounds = 5;
@@ -90,16 +91,61 @@ route.post("/email-auth-login", async (req, res) => {
   }
 });
 
-// This will initiate the login
-route.get(
-  "/google-auth",
-  passport.authenticate("google", { scope: ["profile", "email"] }),
-);
-
 // Handle the token expiry logic in here
 route.get("/email-auth-refresh", async (req, res) => {
   try {
     // Add something in here
+  } catch (err) {
+    logger.error({
+      url: req.originalUrl,
+      method: req.method,
+      body: req.body,
+      stack: err.stack,
+    });
+    return res
+      .status(HttpStatus.ERROR)
+      .json({ message: "Something went wrong" });
+  }
+});
+
+// Google authenticaiton
+route.get("/google-auth", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split("Bearer ")[1] || "";
+    if (!token)
+      return res
+        .status(HttpStatus.ERROR)
+        .json({ message: "no id token found" });
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: appConfig.googleClientId,
+    });
+    const { name, email, sub } = ticket.getPayload();
+    const foundUser = await common.findUserByEmail(email);
+    if (foundUser.length) {
+      const payload = {
+        id: foundUser[0]._id.toString(),
+      };
+      const jwtToken = await jsonwebtoken.sign(payload, appConfig.jwtSecret, {
+        expiresIn: "1d",
+        algorithm: "HS512",
+      });
+      return res.status(HttpStatus.OK).json({ token: jwtToken });
+    }
+    const resp = await UserModel.insertOne({
+      name,
+      email,
+      sub_id: sub,
+      auth_type: AuthType.google_login,
+    });
+    const payload = {
+      id: resp._id.toString(),
+    };
+    const jwtToken = await jsonwebtoken.sign(payload, appConfig.jwtSecret, {
+      expiresIn: "1d",
+      algorithm: "HS512",
+    });
+    return res.status(HttpStatus.OK).json({ token: jwtToken });
   } catch (err) {
     logger.error({
       url: req.originalUrl,

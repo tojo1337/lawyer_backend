@@ -17,9 +17,9 @@ class AgendaConfig {
           address: mongo_address,
           collection: "agenda_jobs",
         }),
-        removeOnComplete: true
+        removeOnComplete: true,
       });
-      Agenda.instance = this;
+      AgendaConfig.instance = this;
     } catch (err) {
       throw err;
     }
