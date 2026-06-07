@@ -6,7 +6,7 @@ import { transport } from "../config/smtp.config.js";
 
 const cores = os.cpus.length;
 
-export async function limiter(arrs) {
+export async function promiseCaller(arrs) {
   const limit = pLimit(cores);
   let arr = arrs.map((item) => limit(() => item));
   const resp = await Promise.all(arr);
@@ -30,4 +30,8 @@ export async function sendOtpEmail({ email, otp }) {
 export function genUuid() {
   const uuidGen = crypto.randomUUID();
   return uuidGen;
+}
+
+export function genOtpToken(){
+  // Add some code to generate otp token
 }

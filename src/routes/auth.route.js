@@ -9,6 +9,9 @@ import * as common from "../utils/commons.js";
 import { appConfig } from "../config/app.config.js";
 import { googleConf as googleClient } from "../config/google-client.config.js";
 import { AuthType } from "../enum/auth-type.js";
+import { agenda } from "../config/agenda.config.js";
+import { AgendaJobs } from "../enum/agenda-jobs.js";
+import otpTokeniddleware from "../middleware/otp-token.middleware.js";
 
 const route = Router();
 const bcryptRounds = 5;
@@ -70,8 +73,40 @@ route.post("/email-auth-login", async (req, res) => {
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "Wrong email id or password" });
+    let promiseArr = [];
+    promiseArr.push(agenda.now(AgendaJobs.otpService, { to: email }));
+    promiseArr.push(
+      jsonwebtoken.sign(payload, appConfig.otpSecret, {
+        expiresIn: "10m",
+        algorithm: "HS512",
+      }),
+    );
+    const [_, token] = await helper.promiseCaller(promiseArr);
+    return res.status(HttpStatus.OK).json({ token });
+  } catch (err) {
+    logger.error({
+      url: req.originalUrl,
+      method: req.method,
+      body: req.body,
+      stack: err.stack,
+    });
+    return res
+      .status(HttpStatus.ERROR)
+      .json({ message: "Something went wrong" });
+  }
+});
+
+// Verify the user and provide the original jwt token
+route.post("/email-otp-verify", otpTokeniddleware, async (req, res) => {
+  try {
+    const { otp } = req.body;
+    const userData = req.userData || null;
+    if (!userData)
+      return res
+        .status(HttpStatus.ERROR)
+        .json({ message: "Email OTP not verified" });
     const payload = {
-      id: userArr[0]._id.toString(),
+      id: userData._id.toStrign(),
     };
     const token = await jsonwebtoken.sign(payload, appConfig.jwtSecret, {
       expiresIn: "1d",
@@ -92,7 +127,7 @@ route.post("/email-auth-login", async (req, res) => {
 });
 
 // Handle the token expiry logic in here
-route.get("/email-auth-refresh", async (req, res) => {
+route.get("/auth-refresh", async (req, res) => {
   try {
     // Add something in here
   } catch (err) {

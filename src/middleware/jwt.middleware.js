@@ -3,6 +3,7 @@ import { UserModel } from "../model/user.model.js";
 import { HttpStatus } from "../enum/http-status.js";
 import { appConfig as common } from "../config/app.config.js";
 
+// Need to modify this one as well
 export default async function jwtMiddleware(req, res, next) {
   try {
     const token = req.headers.authorization?.split("Bearer ")[1] || "";

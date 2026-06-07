@@ -3,6 +3,7 @@ export const appConfig = Object.freeze({
   port: process.env.PORT,
   release: process.env.RELEASE,
   jwtSecret: process.env.SECRET,
+  otpSecret: process.env.OTPSEC,
   appDb: process.env.DB_CONNECTOR,
   smtpHost: process.env.SMTP_HOST,
   smtpPort: process.env.SMTP_PORT,

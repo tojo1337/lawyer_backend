@@ -26,7 +26,7 @@ const UserSchema = new mongoose.Schema(
   },
   {
     versionKey: false,
-    collection: "user",
+    collection: ModelName.UserModel,
     timestamps: {
       createdAt: "created_at",
       updatedAt: "updated_at",
