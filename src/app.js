@@ -8,7 +8,7 @@ import { logger } from "./config/pino.config.js";
 import { appConfig } from "./config/app.config.js";
 import { route as authRoute } from "./routes/auth.route.js";
 import { route as pingRoute } from "./routes/ping.route.js";
-import { rotue as recordRoute } from "./routes/record.route.js";
+import { route as recordRoute } from "./routes/record.route.js";
 import { agenda } from "./config/agenda.config.js";
 
 const app = express();
