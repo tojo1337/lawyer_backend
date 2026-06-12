@@ -6,7 +6,6 @@ const TokenSchema = new mongoose.Schema(
     owner: {
         type: mongoose.Types.ObjectId,
         ref: ModelName.UserModel,
-        required: true
     },
     uuid: {
         type: String,

@@ -12,6 +12,7 @@ import { AuthType } from "../enum/auth-type.js";
 import { agenda } from "../config/agenda.config.js";
 import { AgendaJobs } from "../enum/agenda-jobs.js";
 import otpTokeniddleware from "../middleware/otp-token.middleware.js";
+import { TokenModel } from "../model/token.model.js";
 
 const route = Router();
 const bcryptRounds = 5;
@@ -19,7 +20,7 @@ const bcryptRounds = 5;
 // Register the user using email
 route.post("/email-auth-register", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password } = req.body || {};
     if (
       !name ||
       !email ||
@@ -59,7 +60,7 @@ route.post("/email-auth-register", async (req, res) => {
 // email login
 route.post("/email-auth-login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
     if (!email || !password || email === "" || password === "")
       return res
         .status(HttpStatus.ERROR)
@@ -74,7 +75,21 @@ route.post("/email-auth-login", async (req, res) => {
         .status(HttpStatus.ERROR)
         .json({ message: "Wrong email id or password" });
     let promiseArr = [];
-    promiseArr.push(agenda.now(AgendaJobs.otpService, { to: email }));
+    const otpId = helper.genUuid();
+    const otpToken = helper.genOtpToken();
+    const tokenEntry = await TokenModel.insertOne({
+      uuid: otpId,
+      otp: otpToken
+    });
+    const payload ={
+      tokenId: otpId
+    };
+    promiseArr.push(
+      agenda.now(AgendaJobs.otpService, {
+        to: email,
+        tokenId: tokenEntry._id.toString(),
+      }),
+    );
     promiseArr.push(
       jsonwebtoken.sign(payload, appConfig.otpSecret, {
         expiresIn: "10m",
@@ -99,7 +114,7 @@ route.post("/email-auth-login", async (req, res) => {
 // Verify the user and provide the original jwt token
 route.post("/email-otp-verify", otpTokeniddleware, async (req, res) => {
   try {
-    const { otp } = req.body;
+    const { otp } = req.body || {};
     const userData = req.userData || null;
     if (!userData)
       return res

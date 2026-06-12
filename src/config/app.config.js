@@ -9,7 +9,6 @@ export const appConfig = Object.freeze({
   smtpPort: process.env.SMTP_PORT,
   smtpUser: process.env.SMTP_USER,
   smtpPass: process.env.SMTP_PASS,
-  smtpFrom: process.env.SMTP_FROM,
   googleClientId: process.env.GOOGLE_CLIENT_ID,
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
 });

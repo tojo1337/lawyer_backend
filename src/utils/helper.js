@@ -4,7 +4,7 @@ import pLimit from "p-limit";
 import { appConfig } from "../config/app.config.js";
 import { transport } from "../config/smtp.config.js";
 
-const cores = os.cpus.length;
+const cores = os.cpus().length;
 
 export async function promiseCaller(arrs) {
   const limit = pLimit(cores);
@@ -16,7 +16,7 @@ export async function promiseCaller(arrs) {
 export async function sendOtpEmail({ email, otp }) {
   try {
     const payload = {
-      from: appConfig.smtpFrom,
+      from: appConfig.smtpUser,
       to: email,
       subject: "Authentication OTP",
       text: `Here's your otp : ${otp}`,
@@ -32,6 +32,13 @@ export function genUuid() {
   return uuidGen;
 }
 
-export function genOtpToken(){
-  // Add some code to generate otp token
+export function genOtpToken() {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let otp = "";
+  for (let i = 0; i < 6; i++) {
+    const randomIndex = Math.floor(Math.random() * chars.length);
+    otp += chars[randomIndex];
+  }
+  return otp;
 }
