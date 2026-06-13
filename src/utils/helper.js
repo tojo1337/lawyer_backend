@@ -16,12 +16,12 @@ export async function promiseCaller(arrs) {
 export async function sendOtpEmail({ email, otp }) {
   try {
     const payload = {
-      from: appConfig.smtpUser,
+      from: appConfig.smtpSender,
       to: email,
       subject: "Authentication OTP",
       text: `Here's your otp : ${otp}`,
     };
-    await transport.sendMail(payload);
+    const _responseInfo = await transport.sendMail(payload);
   } catch (err) {
     throw err;
   }

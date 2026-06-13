@@ -9,7 +9,11 @@ import { TokenModel } from "../model/token.model.js";
 // Generate otp and send to client
 agenda.define(AgendaJobs.otpService, async (job) => {
   try {
-    const { to: email, tokenId } = job.attrs.data || {};
+    const { to: email, tokenId, otpToken } = job.attrs.data || {};
+    if (!email || !tokenId || !otpToken)
+      throw new Error(
+        "Not all fields were provided among email, tokenId and otpToken",
+      );
     const userData = await common.findUserByEmail(email);
     if (!userData.length)
       throw new Error(`No user found with the given email id : ${email}`);

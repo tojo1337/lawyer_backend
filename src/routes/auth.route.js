@@ -58,6 +58,7 @@ route.post("/email-auth-register", async (req, res) => {
 });
 
 // email login
+// Need to make sure so that only one otp will be send till the otp is not expired
 route.post("/email-auth-login", async (req, res) => {
   try {
     const { email, password } = req.body || {};
@@ -88,6 +89,7 @@ route.post("/email-auth-login", async (req, res) => {
       agenda.now(AgendaJobs.otpService, {
         to: email,
         tokenId: tokenEntry._id.toString(),
+        otpToken
       }),
     );
     promiseArr.push(
