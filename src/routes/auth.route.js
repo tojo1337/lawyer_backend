@@ -123,7 +123,7 @@ route.post("/email-otp-verify", otpTokeniddleware, async (req, res) => {
         .status(HttpStatus.ERROR)
         .json({ message: "Email OTP not verified" });
     const payload = {
-      id: userData._id.toStrign(),
+      id: userData._id.toString(),
     };
     const token = await jsonwebtoken.sign(payload, appConfig.jwtSecret, {
       expiresIn: "1d",

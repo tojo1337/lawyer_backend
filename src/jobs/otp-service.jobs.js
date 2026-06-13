@@ -25,7 +25,7 @@ agenda.define(AgendaJobs.otpService, async (job) => {
         },
         {
           $set: {
-            owner: userData._id,
+            owner: userData[0]._id,
           },
         },
       ),

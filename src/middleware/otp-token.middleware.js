@@ -15,7 +15,7 @@ export default async function otpTokeniddleware(req, res, next) {
         .status(HttpStatus.UN_AUTHORIZED)
         .json({ message: "Invalid token" });
     const tokenData = await TokenModel.findOne({
-      uuid: decoded.uuid,
+      uuid: decoded.tokenId,
     }).lean();
     if (!tokenData)
       return res.status(HttpStatus.ERROR).json({ message: "Invalid token" });
