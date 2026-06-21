@@ -1,4 +1,5 @@
 export const ModelName = Object.freeze({
   UserModel: "user",
-  TokenModel: "token"
+  TokenModel: "token",
+  CaseModel: "case"
 });

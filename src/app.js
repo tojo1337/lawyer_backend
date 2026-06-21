@@ -8,8 +8,9 @@ import { logger } from "./config/pino.config.js";
 import { appConfig } from "./config/app.config.js";
 import { route as authRoute } from "./routes/auth.route.js";
 import { route as pingRoute } from "./routes/ping.route.js";
-import { route as recordRoute } from "./routes/record.route.js";
+import { route as casesRoute } from "./routes/cases.route.js";
 import { agenda } from "./config/agenda.config.js";
+import { route as commonRoute } from "./routes/common.route.js";
 
 const app = express();
 const server = createServer(app);
@@ -23,7 +24,8 @@ async function main() {
 
     app.use("/test", pingRoute);
     app.use("/auth", authRoute);
-    app.use("/record", recordRoute);
+    app.use("/cases", casesRoute);
+    app.use("/common", commonRoute);
 
     server.listen(appConfig.port, () => {
       logger.info(`Server started at port : ${appConfig.port}`);
