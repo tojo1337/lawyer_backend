@@ -3,8 +3,12 @@ import { Router } from "express";
 import { logger } from "../config/pino.config.js";
 import { HttpStatus } from "../enum/http-status.js";
 import { CaseModel } from "../model/case.model.js";
+import jwtMiddleware from "../middleware/jwt.middleware.js";
 
+// Need to fix some code in here
 const route = Router();
+
+route.use(jwtMiddleware);
 
 route.get("/get-all-cases", async (req, res) => {
   try {

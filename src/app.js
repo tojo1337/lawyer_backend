@@ -6,10 +6,10 @@ import express, { json } from "express";
 import dbConnector from "./db/db.connector.js";
 import { logger } from "./config/pino.config.js";
 import { appConfig } from "./config/app.config.js";
+import { agenda } from "./config/agenda.config.js";
 import { route as authRoute } from "./routes/auth.route.js";
 import { route as pingRoute } from "./routes/ping.route.js";
 import { route as casesRoute } from "./routes/cases.route.js";
-import { agenda } from "./config/agenda.config.js";
 import { route as commonRoute } from "./routes/common.route.js";
 
 const app = express();

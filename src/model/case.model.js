@@ -14,7 +14,8 @@ const CaseSchema = new mongoose.Schema(
       required: true,
     },
     court_name: {
-      type: String,
+      type: mongoose.Types.ObjectId,
+      ref: ModelName.CourtName,
       required: true,
     },
     case_number: {
@@ -30,7 +31,8 @@ const CaseSchema = new mongoose.Schema(
       required: true,
     },
     case_particulars: {
-      type: String,
+      type: mongoose.Types.ObjectId,
+      ref: ModelName.Particulars,
       required: true,
     },
     year: {
@@ -38,7 +40,8 @@ const CaseSchema = new mongoose.Schema(
       required: true,
     },
     current_stage: {
-      type: String,
+      type: mongoose.Types.ObjectId,
+      ref: ModelName.CurrentStage,
       required: true,
     },
     previous_date: {
