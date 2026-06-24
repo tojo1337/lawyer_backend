@@ -13,6 +13,7 @@ import { agenda } from "../config/agenda.config.js";
 import { AgendaJobs } from "../enum/agenda-jobs.js";
 import otpTokeniddleware from "../middleware/otp-token.middleware.js";
 import { TokenModel } from "../model/token.model.js";
+import mongoose from "mongoose";
 
 const route = Router();
 const bcryptRounds = 5;
@@ -143,11 +144,59 @@ route.post("/email-otp-verify", otpTokeniddleware, async (req, res) => {
   }
 });
 
-// Handle the token expiry logic in here
+// Refresh token api
 route.get("/auth-refresh", async (req, res) => {
+  const token = req.headers.authorization?.split("Bearer ")[1] || "";
   try {
-    // Add something in here
+    const result = jwt.verify(token, appConfig.jwtSecret);
+    if (!result) {
+      return res
+        .status(HttpStatus.UN_AUTHORIZED)
+        .json({ message: "UnAuthorized" });
+    }
+    const { id } = result;
+    const user = await UserModel.findOne({
+      _id: new mongoose.Types.ObjectId(id),
+    }).lean();
+    if (user) {
+      const payload = { id: user._id.toString() };
+      const refresh = jwt.sign(payload, appConfig.jwtSecret, {
+        expiresIn: "1d",
+        algorithm: "HS512",
+      });
+      return res.status(HttpStatus.OK).json({ token: refresh });
+    } else {
+      return res
+        .status(HttpStatus.UN_AUTHORIZED)
+        .json({ message: "UnAuthorized" });
+    }
   } catch (err) {
+    if (err instanceof jwt.TokenExpiredError) {
+      const result = jwt.verify(token, appConfig.jwtSecret, {
+        ignoreExpiration: true,
+      });
+      if (!result) {
+        return res
+          .status(HttpStatus.UN_AUTHORIZED)
+          .json({ message: "UnAuthorized" });
+      }
+      const { id } = result;
+      const user = await UserModel.findOne({
+        _id: new mongoose.Types.ObjectId(id),
+      }).lean();
+      if (user) {
+        const payload = { id: user._id.toString() };
+        const refresh = jwt.sign(payload, appConfig.jwtSecret, {
+          expiresIn: "1d",
+          algorithm: "HS512",
+        });
+        return res.status(HttpStatus.OK).json({ token: refresh });
+      } else {
+        return res
+          .status(HttpStatus.UN_AUTHORIZED)
+          .json({ message: "UnAuthorized" });
+      }
+    }
     logger.error({
       url: req.originalUrl,
       method: req.method,
@@ -155,8 +204,8 @@ route.get("/auth-refresh", async (req, res) => {
       stack: err.stack,
     });
     return res
-      .status(HttpStatus.ERROR)
-      .json({ message: "Something went wrong" });
+      .status(HttpStatus.REQUEST_ERROR)
+      .json({ error: `Error occurred : ${err}` });
   }
 });
 

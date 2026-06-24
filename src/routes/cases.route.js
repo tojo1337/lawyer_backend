@@ -8,7 +8,7 @@ import jwtMiddleware from "../middleware/jwt.middleware.js";
 // Need to fix some code in here
 const route = Router();
 
-route.use(jwtMiddleware);
+// route.use(jwtMiddleware);
 
 route.get("/get-all-cases", async (req, res) => {
   try {
