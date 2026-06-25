@@ -148,7 +148,7 @@ route.post("/email-otp-verify", otpTokeniddleware, async (req, res) => {
 route.get("/auth-refresh", async (req, res) => {
   const token = req.headers.authorization?.split("Bearer ")[1] || "";
   try {
-    const result = jwt.verify(token, appConfig.jwtSecret);
+    const result = jsonwebtoken.verify(token, appConfig.jwtSecret);
     if (!result) {
       return res
         .status(HttpStatus.UN_AUTHORIZED)
@@ -160,7 +160,7 @@ route.get("/auth-refresh", async (req, res) => {
     }).lean();
     if (user) {
       const payload = { id: user._id.toString() };
-      const refresh = jwt.sign(payload, appConfig.jwtSecret, {
+      const refresh = jsonwebtoken.sign(payload, appConfig.jwtSecret, {
         expiresIn: "1d",
         algorithm: "HS512",
       });
@@ -171,8 +171,8 @@ route.get("/auth-refresh", async (req, res) => {
         .json({ message: "UnAuthorized" });
     }
   } catch (err) {
-    if (err instanceof jwt.TokenExpiredError) {
-      const result = jwt.verify(token, appConfig.jwtSecret, {
+    if (err instanceof jsonwebtoken.TokenExpiredError) {
+      const result = jsonwebtoken.verify(token, appConfig.jwtSecret, {
         ignoreExpiration: true,
       });
       if (!result) {
@@ -186,7 +186,7 @@ route.get("/auth-refresh", async (req, res) => {
       }).lean();
       if (user) {
         const payload = { id: user._id.toString() };
-        const refresh = jwt.sign(payload, appConfig.jwtSecret, {
+        const refresh = jsonwebtoken.sign(payload, appConfig.jwtSecret, {
           expiresIn: "1d",
           algorithm: "HS512",
         });
