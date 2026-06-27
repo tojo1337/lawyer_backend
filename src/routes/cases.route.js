@@ -61,15 +61,15 @@ route.get("/get-all-cases", async (req, res) => {
       } = item || {};
       return {
         caseId,
-        registrationDate: date_of_registration,
-        courtName: court_name,
+        registrationDate: date_of_registration.toISOString(),
+        courtName: court_name.toString(),
         litigant,
         litigantContact: litigant_contact,
-        particulars: case_particulars,
+        particulars: case_particulars.toString(),
         year,
-        currentStage: current_stage,
-        previousDate: previous_date,
-        nextDate: next_date,
+        currentStage: current_stage.toString(),
+        previousDate: previous_date.toISOString(),
+        nextDate: next_date.toISOString(),
       };
     });
 
@@ -188,7 +188,7 @@ route.post("/make-or-edit-cases", async (req, res) => {
     };
     if (!caseId) {
       const _respData = await CaseModel.insertOne({
-        case_onwer: new mongoose.Types.ObjectId(id),
+        case_owner: new mongoose.Types.ObjectId(id),
         ...payload,
       });
     } else {

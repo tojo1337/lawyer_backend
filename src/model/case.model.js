@@ -4,7 +4,7 @@ import { AuthType } from "../enum/auth-type.js";
 
 const CaseSchema = new mongoose.Schema(
   {
-    case_onwer: {
+    case_owner: {
       type: mongoose.Types.ObjectId,
       ref: ModelName.UserModel,
       required: true,
