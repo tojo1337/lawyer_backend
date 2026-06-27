@@ -4,6 +4,7 @@ import { logger } from "../config/pino.config.js";
 import { HttpStatus } from "../enum/http-status.js";
 import { CaseModel } from "../model/case.model.js";
 import jwtMiddleware from "../middleware/jwt.middleware.js";
+import * as caseSchema from "../schema/cases.schema.js";
 
 // Need to fix some code in here
 const route = Router();
@@ -20,6 +21,7 @@ route.get("/get-all-cases", async (req, res) => {
         .json({ message: "Unauthorized to perform this action" });
 
     // Query will be prepared in here
+    await caseSchema.caseListing.validateAsync({ fromDate, toDate });
     const query = {};
     if (!fromDate && !toDate) {
       query["next_date"] = new Date();
@@ -93,7 +95,8 @@ route.get("/get-case-info/:caseId", async (req, res) => {
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "caseId or id not found" });
-
+    
+    await caseSchema.getCaseInfo.validateAsync({ caseId });
     const foundData = await CaseModel.findOne({
       case_owner: new mongoose.Types.ObjectId(id),
       _id: new mongoose.Types.ObjectId(id),
@@ -159,6 +162,18 @@ route.post("/make-or-edit-cases", async (req, res) => {
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "caseId and id are required" });
+    await caseSchema.upsertCaseSchema.validateAsync({
+      registrationDate,
+      courtName,
+      caseNumber,
+      litigant,
+      litigantContact,
+      particulars,
+      year,
+      currentStage,
+      previousDate,
+      nextDate,
+    });
     const payload = {
       year,
       date_of_registration: registrationDate,
@@ -206,6 +221,7 @@ route.get("/delete-case", async (req, res) => {
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "case Id or id not found" });
+    await caseSchema.deleteCase.validateAsync({ caseId });
     const _deleteData = await CaseModel.deleteOne({
       case_owner: new mongoose.Types.ObjectId(id),
       _id: new mongoose.Types.ObjectId(caseId),
