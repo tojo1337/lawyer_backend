@@ -158,10 +158,10 @@ route.post("/make-or-edit-cases", async (req, res) => {
       previousDate,
       nextDate,
     } = req.body || {};
-    if (!caseId || !id)
+    if (!id)
       return res
         .status(HttpStatus.ERROR)
-        .json({ message: "caseId and id are required" });
+        .json({ message: "user id not found" });
     await caseSchema.upsertCaseSchema.validateAsync({
       registrationDate,
       courtName,
@@ -187,7 +187,10 @@ route.post("/make-or-edit-cases", async (req, res) => {
       next_date: nextDate,
     };
     if (!caseId) {
-      const _respData = await CaseModel.insertOne({ ...payload });
+      const _respData = await CaseModel.insertOne({
+        case_onwer: new mongoose.Types.ObjectId(id),
+        ...payload,
+      });
     } else {
       const _respDataUpdate = await CaseModel.updateOne(
         {
