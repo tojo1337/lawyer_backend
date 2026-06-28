@@ -131,6 +131,7 @@ route.get("/get-all-cases", async (req, res) => {
   }
 });
 
+// Will be required for update as we will need something to prefill the form
 route.get("/get-case-info/:caseId", async (req, res) => {
   try {
     const { id } = req.userData || {};
