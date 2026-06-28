@@ -5,6 +5,10 @@ import { HttpStatus } from "../enum/http-status.js";
 import { CaseModel } from "../model/case.model.js";
 import jwtMiddleware from "../middleware/jwt.middleware.js";
 import * as caseSchema from "../schema/cases.schema.js";
+import * as helper from "../utils/helper.js";
+import { CourtNameModel } from "../model/court-name.model.js";
+import { CurrentStageModel } from "../model/current-stage.mdoel.js";
+import { ParticularsModel } from "../model/particulars.model.js";
 
 // Need to fix some code in here
 const route = Router();
@@ -40,6 +44,36 @@ route.get("/get-all-cases", async (req, res) => {
       };
     }
 
+    let [courtNames, particulars, currentStages] = await helper.promiseCaller(
+      [
+        CourtNameModel.find({}).lean(),
+        ParticularsModel.find({}).lean(),
+        CurrentStageModel.find({}).lean(),
+      ],
+    );
+
+    courtNames = (courtNames || []).map((item) => {
+      const _id = item._id.toString();
+      return {
+        _id,
+        name: item.name || "",
+      };
+    });
+    particulars = (particulars || []).map((item) => {
+      const _id = item._id.toString();
+      return {
+        _id,
+        name: item.name || "",
+      };
+    });
+    currentStages = (currentStages || []).map((item) => {
+      const _id = item._id.toString();
+      return {
+        _id,
+        name: item.name || "",
+      };
+    });
+
     const allCaseList = (
       (await CaseModel.find({
         case_owner: new mongoose.Types.ObjectId(id),
@@ -59,15 +93,25 @@ route.get("/get-all-cases", async (req, res) => {
         previous_date,
         next_date,
       } = item || {};
+      const courtNameVal = court_name.toString();
+      const currentStageVal = current_stage.toString();
+      const caseParticularsVal = case_particulars.toString();
+
+      // Add some filtering code in here
+      const [courtNameRes] = courtNames.filter(item=>item._id===courtNameVal);
+      const [currentStageValRes] = currentStages.filter(item=>item._id===currentStageVal);
+      const [caseParticularsRes] = particulars.filter(item=>item._id===caseParticularsVal);
+
       return {
         caseId,
+        caseNumber: case_number,
         registrationDate: date_of_registration.toISOString(),
-        courtName: court_name.toString(),
+        courtName: courtNameRes.name || "",
         litigant,
         litigantContact: litigant_contact,
-        particulars: case_particulars.toString(),
+        particulars: caseParticularsRes.name || "",
         year,
-        currentStage: current_stage.toString(),
+        currentStage: currentStageValRes.name || "",
         previousDate: previous_date.toISOString(),
         nextDate: next_date.toISOString(),
       };
@@ -95,7 +139,7 @@ route.get("/get-case-info/:caseId", async (req, res) => {
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "caseId or id not found" });
-    
+
     await caseSchema.getCaseInfo.validateAsync({ caseId });
     const foundData = await CaseModel.findOne({
       case_owner: new mongoose.Types.ObjectId(id),
