@@ -11,6 +11,7 @@ import { route as authRoute } from "./routes/auth.route.js";
 import { route as pingRoute } from "./routes/ping.route.js";
 import { route as casesRoute } from "./routes/cases.route.js";
 import { route as commonRoute } from "./routes/common.route.js";
+import { route as caseFileRoute } from "./routes/case-file.route.js";
 
 const app = express();
 const server = createServer(app);
@@ -26,6 +27,7 @@ async function main() {
     app.use("/auth", authRoute);
     app.use("/cases", casesRoute);
     app.use("/common", commonRoute);
+    app.use("/case-file", caseFileRoute);
 
     server.listen(appConfig.port, () => {
       logger.info(`Server started at port : ${appConfig.port}`);
