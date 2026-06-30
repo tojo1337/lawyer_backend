@@ -361,30 +361,88 @@ route.get("/missing-advance-date-cases", async (req, res)=>{
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "Not authorized to perform the action" });
-    const curentDate = new Date().setHours(0, 0, 0, 0);
+
+    let [courtNames, particulars, currentStages] = await helper.promiseCaller([
+      CourtNameModel.find({}).lean(),
+      ParticularsModel.find({}).lean(),
+      CurrentStageModel.find({}).lean(),
+    ]);
+
+    courtNames = (courtNames || []).map((item) => {
+      const _id = item._id.toString();
+      return {
+        _id,
+        name: item.name || "",
+      };
+    });
+    particulars = (particulars || []).map((item) => {
+      const _id = item._id.toString();
+      return {
+        _id,
+        name: item.name || "",
+      };
+    });
+    currentStages = (currentStages || []).map((item) => {
+      const _id = item._id.toString();
+      return {
+        _id,
+        name: item.name || "",
+      };
+    });
+
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const skipVal = Number.isInteger(Number(skip)) ? Number(skip) : 0;
-    const limitVal = Number.isInteger(Number(limit)) ? Number(lmit) : 10;
+    const limitVal = Number.isInteger(Number(limit)) ? Number(limit) : 10;
+    
     const allCaseInfo = (
       (await CaseModel.find({
         case_owner: new mongoose.Types.ObjectId(id),
-        next_date: { $lt: currentDate },
+        next_date: { $lt: yesterday },
       })
         .skip(skipVal)
         .limit(limitVal)
         .lean()) || []
     ).map((item) => {
+      const caseId = item._id.toString();
+      const {
+        date_of_registration,
+        court_name,
+        case_number,
+        litigant,
+        litigant_contact,
+        case_particulars,
+        year,
+        current_stage,
+        previous_date,
+        next_date,
+      } = item || {};
+      const courtNameVal = court_name.toString();
+      const currentStageVal = current_stage.toString();
+      const caseParticularsVal = case_particulars.toString();
+
+      // Add some filtering code in here
+      const [courtNameRes] = courtNames.filter(
+        (item) => item._id === courtNameVal,
+      );
+      const [currentStageValRes] = currentStages.filter(
+        (item) => item._id === currentStageVal,
+      );
+      const [caseParticularsRes] = particulars.filter(
+        (item) => item._id === caseParticularsVal,
+      );
+
       return {
-        caseId: item?._id.toString() || "",
-        caseNumber: item?.case_number || "",
-        registrationDate: item?.date_of_registration || "",
-        courtName: item?.court_name || "",
-        litigant: item?.litigant || "",
-        litigantContact: item?.litigant_contact || "",
-        particulars: item?.particulars || "",
-        year: item?.year || "",
-        currentStage: item?.current_stage || "",
-        previousDate: item?.previous_date || "",
-        nextDate: item?.next_date || "",
+        caseId,
+        caseNumber: case_number,
+        registrationDate: date_of_registration.toISOString(),
+        courtName: courtNameRes.name || "",
+        litigant,
+        litigantContact: litigant_contact,
+        particulars: caseParticularsRes.name || "",
+        year,
+        currentStage: currentStageValRes.name || "",
+        previousDate: previous_date.toISOString(),
+        nextDate: next_date.toISOString(),
       };
     });
     return res
