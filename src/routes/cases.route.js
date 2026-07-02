@@ -413,7 +413,7 @@ route.get("/search-case-entry", async (req, res) => {
 route.get("/missing-advance-date-cases", async (req, res) => {
   try {
     const { id } = req.userData || {};
-    const { page = "0", limit = "10" } = req.query || {};
+    const { page = "1", limit = "10" } = req.query || {};
     if (!id)
       return res
         .status(HttpStatus.ERROR)
@@ -451,7 +451,7 @@ route.get("/missing-advance-date-cases", async (req, res) => {
     const pageVal = Number.isInteger(Number(page)) ? Number(page) : 0;
     const limitVal = Number.isInteger(Number(limit)) ? Number(limit) : 10;
     const startIndex = (pageVal - 1) * limitVal;
-    const endIndex = (pageVal + limitVal) * limitVal;
+    const endIndex = pageVal * limitVal;
 
     const allCaseInfo = (
       (await CaseModel.find({
