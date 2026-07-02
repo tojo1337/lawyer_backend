@@ -17,7 +17,7 @@ route.use(jwtMiddleware);
 
 route.get("/get-all-cases", async (req, res) => {
   try {
-    const { fromDate, toDate } = req.query || {};
+    const { fromDate, toDate, page = "1", limit = "10" } = req.query || {};
     const { id } = req.userData || {};
     if (!id)
       return res
@@ -82,6 +82,8 @@ route.get("/get-all-cases", async (req, res) => {
       (await CaseModel.find({
         case_owner: new mongoose.Types.ObjectId(id),
         ...query,
+        is_deleted: false,
+        is_completed: false,
       }).lean()) || []
     ).map((item) => {
       const caseId = item._id.toString();
@@ -127,7 +129,14 @@ route.get("/get-all-cases", async (req, res) => {
       };
     });
 
-    return res.status(HttpStatus.OK).json({ data: allCaseList || [] });
+    // Check if directly passing the start and index provides the same result or not
+    const pageVal = Number.isInteger(Number(page)) ? Number(page) : 1;
+    const limitVal = Number.isInteger(Number(limit)) ? Number(limit) : 10;
+    const startIndex = (pageVal - 1) * limitVal;
+    const endIndex = pageVal * limitVal;
+    const paginatedResult = (allCaseList || []).slice(startIndex, endIndex);
+
+    return res.status(HttpStatus.OK).json({ data: paginatedResult || [] });
   } catch (err) {
     logger.error({
       url: req.originalUrl,
@@ -281,10 +290,15 @@ route.get("/delete-case", async (req, res) => {
         .status(HttpStatus.ERROR)
         .json({ message: "case Id or id not found" });
     await caseSchema.deleteCase.validateAsync({ caseId });
-    const _deleteData = await CaseModel.deleteOne({
-      case_owner: new mongoose.Types.ObjectId(id),
-      _id: new mongoose.Types.ObjectId(caseId),
-    });
+    const _deleteData = await CaseModel.updateOne(
+      {
+        case_owner: new mongoose.Types.ObjectId(id),
+        _id: new mongoose.Types.ObjectId(caseId),
+      },
+      {
+        $set: { is_deleted: true },
+      },
+    );
     return res
       .status(HttpStatus.OK)
       .json({ message: "Case deleted with success" });
@@ -343,6 +357,8 @@ route.get("/search-case-entry", async (req, res) => {
     const payload = search.toLowerCase();
     const searcItem = (
       (await CaseModel.find({
+        is_deleted: false,
+        is_completed: false,
         case_owner: new mongoose.Types.ObjectId(id),
         case_owner: new mongoose.Types.ObjectId(id),
         $or: [
@@ -457,6 +473,8 @@ route.get("/missing-advance-date-cases", async (req, res) => {
       (await CaseModel.find({
         case_owner: new mongoose.Types.ObjectId(id),
         next_date: { $lt: yesterday },
+        is_deleted: false,
+        is_completed: false
       })
         .skip(startIndex)
         .limit(endIndex)
@@ -507,6 +525,40 @@ route.get("/missing-advance-date-cases", async (req, res) => {
     return res
       .status(HttpStatus.OK)
       .json({ message: "Data fetched succhessfully", data: allCaseInfo || [] });
+  } catch (err) {
+    logger.error({
+      url: req.originalUrl,
+      method: req.method,
+      body: req.body,
+      stack: err.stack,
+    });
+    return res
+      .status(HttpStatus.ERROR)
+      .json({ message: "Something went wrong" });
+  }
+});
+
+route.get("/mark-case-for-completion", async (req, res) => {
+  try {
+    const { caseId } = req.query || {};
+    const { id } = req.userData || {};
+    if (!caseId || !id)
+      return res
+        .status(HttpStatus.ERROR)
+        .json({ message: "case Id or id not found" });
+    await caseSchema.deleteCase.validateAsync({ caseId });
+    const _deleteData = await CaseModel.updateOne(
+      {
+        case_owner: new mongoose.Types.ObjectId(id),
+        _id: new mongoose.Types.ObjectId(caseId),
+      },
+      {
+        $set: { is_completed: true },
+      },
+    );
+    return res
+      .status(HttpStatus.OK)
+      .json({ message: "Case deleted with success" });
   } catch (err) {
     logger.error({
       url: req.originalUrl,

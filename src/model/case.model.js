@@ -50,6 +50,14 @@ const CaseSchema = new mongoose.Schema(
     next_date: {
       type: Date,
     },
+    is_deleted: {
+      type: Boolean,
+      default: false
+    },
+    is_completed: {
+      type: Boolean,
+      default: false
+    }
   },
   {
     versionKey: false,
