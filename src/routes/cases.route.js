@@ -135,7 +135,7 @@ route.get("/get-all-cases", async (req, res) => {
       };
     });
 
-    return res.status(HttpStatus.OK).json({ data: allCaseList || [] });
+    return res.status(HttpStatus.OK).json({ data: allCaseList || [], message: "Data fetched with success" });
   } catch (err) {
     logger.error({
       url: req.originalUrl,
