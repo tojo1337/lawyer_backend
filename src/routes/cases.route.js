@@ -78,13 +78,19 @@ route.get("/get-all-cases", async (req, res) => {
       };
     });
 
+    // Pagination logic
+    const pageVal = Number.isInteger(Number(page)) ? Number(page) : 1;
+    const limitVal = Number.isInteger(Number(limit)) ? Number(limit) : 10;
+    const startIndex = (pageVal - 1) * limitVal;
+    const endIndex = pageVal * limitVal;
+
     const allCaseList = (
       (await CaseModel.find({
         case_owner: new mongoose.Types.ObjectId(id),
         ...query,
         is_deleted: false,
         is_completed: false,
-      }).lean()) || []
+      }).skip(startIndex).limit(endIndex).lean()) || []
     ).map((item) => {
       const caseId = item._id.toString();
       const {
@@ -129,14 +135,7 @@ route.get("/get-all-cases", async (req, res) => {
       };
     });
 
-    // Check if directly passing the start and index provides the same result or not
-    const pageVal = Number.isInteger(Number(page)) ? Number(page) : 1;
-    const limitVal = Number.isInteger(Number(limit)) ? Number(limit) : 10;
-    const startIndex = (pageVal - 1) * limitVal;
-    const endIndex = pageVal * limitVal;
-    const paginatedResult = (allCaseList || []).slice(startIndex, endIndex);
-
-    return res.status(HttpStatus.OK).json({ data: paginatedResult || [] });
+    return res.status(HttpStatus.OK).json({ data: allCaseList || [] });
   } catch (err) {
     logger.error({
       url: req.originalUrl,
@@ -318,13 +317,28 @@ route.get("/delete-case", async (req, res) => {
 route.get("/search-case-entry", async (req, res) => {
   try {
     const { id } = req.userData || {};
-    const { search = "" } = req.query || {};
+    const { search = "", type = "" } = req.query || {};
     if (!id)
       return res.status(HttpStatus.ERROR).json({ message: "Unauthorized" });
     if (!search)
       return res
         .status(HttpStatus.OK)
         .json({ message: "Nothing to search in here", data: [] });
+    
+    const query = {};
+    if (type === "1") {
+      query["next_date"] = {
+        $gte: new Date(),
+      };
+    } else if (type === "-1") {
+      query["next_date"] = {
+        $lte: new Date(),
+      };
+    } else {
+      query["next_date"] = {
+        $gte: new Date(),
+      };
+    }
 
     let [courtNames, particulars, currentStages] = await helper.promiseCaller([
       CourtNameModel.find({}).lean(),
@@ -366,6 +380,7 @@ route.get("/search-case-entry", async (req, res) => {
           { litigant_contact: { $regex: payload, $options: "i" } },
           { year: { $regex: payload, $options: "i" } },
         ],
+        ...query
       }).lean()) || []
     ).map((item) => {
       const caseId = item._id.toString();
@@ -558,7 +573,119 @@ route.get("/mark-case-for-completion", async (req, res) => {
     );
     return res
       .status(HttpStatus.OK)
-      .json({ message: "Case deleted with success" });
+      .json({ message: "Case marked as completed" });
+  } catch (err) {
+    logger.error({
+      url: req.originalUrl,
+      method: req.method,
+      body: req.body,
+      stack: err.stack,
+    });
+    return res
+      .status(HttpStatus.ERROR)
+      .json({ message: "Something went wrong" });
+  }
+});
+
+// May not be required for now
+route.get("/search-completed-case-entry", async (req, res) => {
+  try {
+    const { id } = req.userData || {};
+    const { search = "" } = req.query || {};
+    if (!id)
+      return res.status(HttpStatus.ERROR).json({ message: "Unauthorized" });
+    if (!search)
+      return res
+        .status(HttpStatus.OK)
+        .json({ message: "Nothing to search in here", data: [] });
+
+    let [courtNames, particulars, currentStages] = await helper.promiseCaller([
+      CourtNameModel.find({}).lean(),
+      ParticularsModel.find({}).lean(),
+      CurrentStageModel.find({}).lean(),
+    ]);
+
+    courtNames = (courtNames || []).map((item) => {
+      const _id = item._id.toString();
+      return {
+        _id,
+        name: item.name || "",
+      };
+    });
+    particulars = (particulars || []).map((item) => {
+      const _id = item._id.toString();
+      return {
+        _id,
+        name: item.name || "",
+      };
+    });
+    currentStages = (currentStages || []).map((item) => {
+      const _id = item._id.toString();
+      return {
+        _id,
+        name: item.name || "",
+      };
+    });
+
+    const payload = search.toLowerCase();
+    const searcItem = (
+      (await CaseModel.find({
+        is_deleted: false,
+        is_completed: true,
+        case_owner: new mongoose.Types.ObjectId(id),
+        case_owner: new mongoose.Types.ObjectId(id),
+        $or: [
+          { litigant: { $regex: payload, $options: "i" } },
+          { litigant_contact: { $regex: payload, $options: "i" } },
+          { year: { $regex: payload, $options: "i" } },
+        ],
+      }).lean()) || []
+    ).map((item) => {
+      const caseId = item._id.toString();
+      const {
+        date_of_registration,
+        court_name,
+        case_number,
+        litigant,
+        litigant_contact,
+        case_particulars,
+        year,
+        current_stage,
+        previous_date,
+        next_date,
+      } = item || {};
+      const courtNameVal = court_name.toString();
+      const currentStageVal = current_stage.toString();
+      const caseParticularsVal = case_particulars.toString();
+
+      // Add some filtering code in here
+      const [courtNameRes] = courtNames.filter(
+        (item) => item._id === courtNameVal,
+      );
+      const [currentStageValRes] = currentStages.filter(
+        (item) => item._id === currentStageVal,
+      );
+      const [caseParticularsRes] = particulars.filter(
+        (item) => item._id === caseParticularsVal,
+      );
+
+      return {
+        caseId,
+        caseNumber: case_number,
+        registrationDate: date_of_registration.toISOString(),
+        courtName: courtNameRes.name || "",
+        litigant,
+        litigantContact: litigant_contact,
+        particulars: caseParticularsRes.name || "",
+        year,
+        currentStage: currentStageValRes.name || "",
+        previousDate: previous_date.toISOString(),
+        nextDate: next_date.toISOString(),
+      };
+    });
+    return res
+      .status(HttpStatus.OK)
+      .json({ message: "Search performed successfully", data: searcItem });
   } catch (err) {
     logger.error({
       url: req.originalUrl,
