@@ -478,7 +478,7 @@ route.get("/missing-advance-date-cases", async (req, res) => {
       };
     });
 
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const today = new Date().setHours(0, 0, 0, 0);
     const pageVal = Number.isInteger(Number(page)) ? Number(page) : 0;
     const limitVal = Number.isInteger(Number(limit)) ? Number(limit) : 10;
     const startIndex = (pageVal - 1) * limitVal;
@@ -487,7 +487,7 @@ route.get("/missing-advance-date-cases", async (req, res) => {
     const allCaseInfo = (
       (await CaseModel.find({
         case_owner: new mongoose.Types.ObjectId(id),
-        next_date: { $lt: yesterday },
+        next_date: { $lt: today },
         is_deleted: false,
         is_completed: false
       })
