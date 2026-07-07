@@ -5,4 +5,5 @@ export const ModelName = Object.freeze({
   CourtName: "court-name",
   CurrentStage: "current-stage",
   Particulars: "particulats",
+  FileModel: "file"
 });
