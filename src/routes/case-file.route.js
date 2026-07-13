@@ -20,7 +20,7 @@ const form = formidable({
   maxFileSize: 50 * 1024 * 1024,
 });
 
-route.post("/upload-case-files", async (req, res) => {
+route.post("/upload-case-file", async (req, res) => {
   try {
     const { id } = req?.userData || {};
     const [fields, files] = await form.parse(req);
@@ -60,10 +60,11 @@ route.post("/upload-case-files", async (req, res) => {
   }
 });
 
-route.get("/get-linked-uploaded-files/:caseId", async (req, res) => {
+route.get("/get-linked-uploaded-files", async (req, res) => {
   try {
     const { id } = req?.userData || {};
-    const { caseId } = req.params || {};
+    const { caseId } = req.query || {};
+    // Need to add pagination in here as well
     if (!id || !caseId)
       return res
         .status(HttpStatus.ERROR)
@@ -85,10 +86,11 @@ route.get("/get-linked-uploaded-files/:caseId", async (req, res) => {
         .status(HttpStatus.ERROR)
         .json({ message: "Case with the following id deosn't exist" });
     const payload = (fileData || []).map((item) => {
-      const { _id, file_name } = item || {};
+      const { _id, file_name, file_size } = item || {};
       return {
         fileId: _id.toString(),
         fileName: file_name,
+        fileSize: file_size,
       };
     });
     return res.status(HttpStatus.OK).json({
@@ -116,7 +118,7 @@ route.get("/download-linked-file/:fileId", async (req, res) => {
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "Both id and fileId are required" });
-    const [targetFile, caseEntry] = await Promise.all([
+    const [targetFile, caseEntry] = await helper.promiseCaller([
       FileModel.findOne({
         _id: new mongoose.Types.ObjectId(fileId),
         is_deleted: false,
