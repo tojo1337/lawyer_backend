@@ -60,8 +60,7 @@ route.get("/get-linked-uploaded-files", async (req, res) => {
   try {
     const { id } = req?.userData || {};
     const { caseId } = req.query || {};
-    // Need to add pagination in here as well
-    if (!id || !caseId)
+    if (!id || !caseId || caseId === '')
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "Both id and caseId are required" });
