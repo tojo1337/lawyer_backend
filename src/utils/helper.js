@@ -42,3 +42,11 @@ export function genOtpToken() {
   }
   return otp;
 }
+
+export function createFormidable(){
+  return formidable({
+    maxFiles: 1,
+    uploadDir: "static/",
+    maxFileSize: 50 * 1024 * 1024,
+  });
+}

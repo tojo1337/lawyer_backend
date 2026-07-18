@@ -9,20 +9,16 @@ import { FileModel } from "../model/file.model.js";
 import * as helper from "../utils/helper.js";
 import * as common from "../utils/commons.js";
 import { CaseModel } from "../model/case.model.js";
+import { unlink } from "fs/promises";
 
 const route = Router();
 
 route.use(jwtMiddleware);
 
-const form = formidable({
-  maxFiles: 1,
-  uploadDir: "static/",
-  maxFileSize: 50 * 1024 * 1024,
-});
-
 route.post("/upload-case-file", async (req, res) => {
   try {
     const { id } = req?.userData || {};
+    const form = helper.createFormidable();
     const [fields, files] = await form.parse(req);
     const fileInfo = files?.file[0] || {};
     const caseId = fields?.caseId[0] || "";
@@ -143,6 +139,54 @@ route.get("/download-linked-file/:fileId", async (req, res) => {
     const dirname = common.getRootDir();
     const filePath = path.join(dirname, targetFile.file_path);
     return res.download(filePath, targetFile.file_name);
+  } catch (err) {
+    logger.error({
+      url: req.originalUrl,
+      method: req.method,
+      body: req.body,
+      stack: err.stack,
+    });
+    return res
+      .status(HttpStatus.ERROR)
+      .json({ message: "Something went wrong" });
+  }
+});
+
+route.get("/remove-linked-file", async (req, res) => {
+  try {
+    const { id = '' } = req.userData || {};
+    const { caseId = "", fileId = "" } = req.query || {};
+    if (!id || !caseId || !fileId)
+      return res
+        .status(HttpStatus.ERROR)
+        .json({ message: "Missning caseId or fileId" });
+    const [authUser, fileRes] = await helper.promiseCaller([
+      CaseModel.find({
+        _id: new mongoose.Types.ObjectId(caseId),
+        case_owner: new mongoose.Types.ObjectId(id),
+      }).lean(),
+      FileModel.findOne({
+        _id: new mongoose.Types.ObjectId(fileId),
+        case_link: new mongoose.Types.ObjectId(caseId),
+      }).lean(),
+    ]);
+    if (!authUser.length)
+      return res
+        .status(HttpStatus.ERROR)
+        .json({ message: "User not authorized to perform the given action" });;
+    await helper.promiseCaller([
+      unlink(fileRes.file_path),
+      FileModel.updateOne(
+        {
+          _id: new mongoose.Types.ObjectId(fileId),
+          case_link: new mongoose.Types.ObjectId(caseId),
+        },
+        { $set: { is_deleted: true } },
+      ),
+    ]);
+    return res
+      .status(HttpStatus.OK)
+      .json({ message: "File delted with success" });
   } catch (err) {
     logger.error({
       url: req.originalUrl,
