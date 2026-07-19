@@ -58,11 +58,17 @@ route.post("/upload-case-file", async (req, res) => {
 route.get("/get-linked-uploaded-files", async (req, res) => {
   try {
     const { id } = req?.userData || {};
-    const { caseId } = req.query || {};
-    if (!id || !caseId || caseId === '')
+    const { caseId, page = "1", limit = "10" } = req.query || {};
+    if (!id || !caseId || caseId === "")
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "Both id and caseId are required" });
+
+    const pageVal = Number.isInteger(Number(page)) ? Number(page) : 1;
+    const limitVal = Number.isInteger(Number(limit)) ? Number(limit) : 10;
+    const startIndex = (pageVal - 1) * limitVal;
+    const endIndex = pageVal * limitVal;
+
     const [caseData, fileData] = await helper.promiseCaller([
       CaseModel.find({
         _id: new mongoose.Types.ObjectId(caseId),
@@ -73,7 +79,10 @@ route.get("/get-linked-uploaded-files", async (req, res) => {
       FileModel.find({
         case_link: new mongoose.Types.ObjectId(caseId),
         is_deleted: false,
-      }).lean(),
+      })
+        .skip(startIndex)
+        .limit(endIndex)
+        .lean(),
     ]);
     if (!caseData.length)
       return res
@@ -152,7 +161,7 @@ route.get("/download-linked-file/:fileId", async (req, res) => {
 
 route.get("/remove-linked-file", async (req, res) => {
   try {
-    const { id = '' } = req.userData || {};
+    const { id = "" } = req.userData || {};
     const { caseId = "", fileId = "" } = req.query || {};
     if (!id || !caseId || !fileId)
       return res
@@ -171,7 +180,7 @@ route.get("/remove-linked-file", async (req, res) => {
     if (!authUser.length)
       return res
         .status(HttpStatus.ERROR)
-        .json({ message: "User not authorized to perform the given action" });;
+        .json({ message: "User not authorized to perform the given action" });
     await helper.promiseCaller([
       unlink(fileRes.file_path),
       FileModel.updateOne(
