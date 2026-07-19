@@ -1,6 +1,7 @@
 import os from "os";
 import crypto from "crypto";
 import pLimit from "p-limit";
+import formidable from "formidable";
 import { appConfig } from "../config/app.config.js";
 import { transport } from "../config/smtp.config.js";
 

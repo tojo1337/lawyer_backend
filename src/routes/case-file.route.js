@@ -1,7 +1,6 @@
 import path from "path";
 import mongoose from "mongoose";
 import { Router } from "express";
-import formidable from "formidable";
 import { logger } from "../config/pino.config.js";
 import { HttpStatus } from "../enum/http-status.js";
 import jwtMiddleware from "../middleware/jwt.middleware.js";
