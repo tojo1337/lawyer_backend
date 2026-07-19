@@ -116,22 +116,20 @@ route.get("/get-linked-uploaded-files", async (req, res) => {
 route.get("/download-linked-file/:fileId", async (req, res) => {
   try {
     const { id } = req?.userData || {};
-    const { fileId } = req.query || {};
+    const { fileId } = req.params || {};
     if (!id || !fileId)
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "Both id and fileId are required" });
-    const [targetFile, caseEntry] = await helper.promiseCaller([
-      FileModel.findOne({
-        _id: new mongoose.Types.ObjectId(fileId),
-        is_deleted: false,
-      }).lean(),
-      CaseModel.findOne({
-        _id: new mongoose.Types.ObjectId(file.case_link),
-        case_owner: new mongoose.Types.ObjectId(id),
-        is_deleted: false,
-      }).lean(),
-    ]);
+    const targetFile = await FileModel.findOne({
+      _id: new mongoose.Types.ObjectId(fileId),
+      is_deleted: false,
+    }).lean();
+    const caseEntry = await CaseModel.findOne({
+      _id: new mongoose.Types.ObjectId(targetFile.case_link),
+      case_owner: new mongoose.Types.ObjectId(id),
+      is_deleted: false,
+    }).lean();
     if (!caseEntry)
       return res
         .status(HttpStatus.ERROR)
@@ -141,11 +139,9 @@ route.get("/download-linked-file/:fileId", async (req, res) => {
     res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
     res.set(
       "Content-Disposition",
-      targetFile.file_type || "application/octet-stream",
+      targetFile.mime_type || "application/octet-stream",
     );
-    const dirname = common.getRootDir();
-    const filePath = path.join(dirname, targetFile.file_path);
-    return res.download(filePath, targetFile.file_name);
+    return res.download(targetFile.file_path, targetFile.file_name);
   } catch (err) {
     logger.error({
       url: req.originalUrl,
