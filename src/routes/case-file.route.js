@@ -113,47 +113,48 @@ route.get("/get-linked-uploaded-files", async (req, res) => {
   }
 });
 
-route.get("/download-linked-file/:fileId", async (req, res) => {
-  try {
-    const { id } = req?.userData || {};
-    const { fileId } = req.params || {};
-    if (!id || !fileId)
+  route.get("/download-linked-file/:fileId", async (req, res) => {
+    try {
+      const { id } = req?.userData || {};
+      const { fileId } = req.params || {};
+      if (!id || !fileId)
+        return res
+          .status(HttpStatus.ERROR)
+          .json({ message: "Both id and fileId are required" });
+      const targetFile = await FileModel.findOne({
+        _id: new mongoose.Types.ObjectId(fileId),
+        is_deleted: false,
+      }).lean();
+      const caseEntry = await CaseModel.findOne({
+        _id: new mongoose.Types.ObjectId(targetFile.case_link),
+        case_owner: new mongoose.Types.ObjectId(id),
+        is_deleted: false,
+      }).lean();
+      if (!caseEntry)
+        return res
+          .status(HttpStatus.ERROR)
+          .json({ message: "No parent case found" });
+      if (!targetFile)
+        return res.status(HttpStatus.NOT_FOUND).json({ error: "File not found" });
+      res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
+      res.setHeader("Content-Length", (targetFile.file_size || 0).toString());
+      res.set(
+        "Content-Type",
+        targetFile.mime_type || "application/octet-stream",
+      );
+      return res.download(targetFile.file_path, targetFile.file_name);
+    } catch (err) {
+      logger.error({
+        url: req.originalUrl,
+        method: req.method,
+        body: req.body,
+        stack: err.stack,
+      });
       return res
         .status(HttpStatus.ERROR)
-        .json({ message: "Both id and fileId are required" });
-    const targetFile = await FileModel.findOne({
-      _id: new mongoose.Types.ObjectId(fileId),
-      is_deleted: false,
-    }).lean();
-    const caseEntry = await CaseModel.findOne({
-      _id: new mongoose.Types.ObjectId(targetFile.case_link),
-      case_owner: new mongoose.Types.ObjectId(id),
-      is_deleted: false,
-    }).lean();
-    if (!caseEntry)
-      return res
-        .status(HttpStatus.ERROR)
-        .json({ message: "No parent case found" });
-    if (!targetFile)
-      return res.status(HttpStatus.NOT_FOUND).json({ error: "File not found" });
-    res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
-    res.set(
-      "Content-Disposition",
-      targetFile.mime_type || "application/octet-stream",
-    );
-    return res.download(targetFile.file_path, targetFile.file_name);
-  } catch (err) {
-    logger.error({
-      url: req.originalUrl,
-      method: req.method,
-      body: req.body,
-      stack: err.stack,
-    });
-    return res
-      .status(HttpStatus.ERROR)
-      .json({ message: "Something went wrong" });
-  }
-});
+        .json({ message: "Something went wrong" });
+    }
+  });
 
 route.get("/remove-linked-file", async (req, res) => {
   try {
