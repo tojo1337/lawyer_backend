@@ -12,4 +12,6 @@ export const appConfig = Object.freeze({
   smtpSender: process.env.SMTP_SENDER,
   googleClientId: process.env.GOOGLE_CLIENT_ID,
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  vectorDbUri: process.env.VECTOR_DB_URI,
+  vectorDbName: process.env.VECTOR_DB_NAME
 });

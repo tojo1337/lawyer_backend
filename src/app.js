@@ -12,6 +12,8 @@ import { route as pingRoute } from "./routes/ping.route.js";
 import { route as casesRoute } from "./routes/cases.route.js";
 import { route as commonRoute } from "./routes/common.route.js";
 import { route as caseFileRoute } from "./routes/case-file.route.js";
+import { vectorDb } from "./db/vector-db.connector.js";
+import { vectorCollectionCreator } from "./utils/vector-collection-creator.js";
 
 const app = express();
 const server = createServer(app);
@@ -22,6 +24,8 @@ async function main() {
   try {
     await dbConnector();
     await agenda.start();
+    await vectorDb.connect();
+    await vectorCollectionCreator();
 
     app.use("/test", pingRoute);
     app.use("/auth", authRoute);

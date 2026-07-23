@@ -13,7 +13,11 @@
   "type": "module",
   "dependencies": {
     "@agendajs/mongo-backend": "^4.0.2",
+    "@mastra/core": "^1.51.0",
+    "@mastra/mongodb": "^1.13.0",
+    "@mastra/rag": "^2.4.1",
     "agenda": "^6.2.5",
+    "ai": "^7.0.34",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",

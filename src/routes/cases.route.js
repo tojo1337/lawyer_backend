@@ -9,6 +9,8 @@ import * as helper from "../utils/helper.js";
 import { CourtNameModel } from "../model/court-name.model.js";
 import { CurrentStageModel } from "../model/current-stage.mdoel.js";
 import { ParticularsModel } from "../model/particulars.model.js";
+import { agenda } from "../config/agenda.config.js";
+import { AgendaJobs } from "../enum/agenda-jobs.js";
 
 // Need to fix some code in here
 const route = Router();
@@ -250,19 +252,30 @@ route.post("/make-or-edit-cases", async (req, res) => {
       previous_date: previousDate,
       next_date: nextDate,
     };
+    let responseData = null;
     if (!caseId) {
-      const _respData = await CaseModel.insertOne({
+      const responseData = await CaseModel.insertOne({
         case_owner: new mongoose.Types.ObjectId(id),
         ...payload,
       });
+      await agenda.now(AgendaJobs.processJsonService, {
+        id: responseData._id.toString(),
+        case_owner: id,
+        ...payload,
+      });
     } else {
-      const _respDataUpdate = await CaseModel.updateOne(
+      const responseData = await CaseModel.updateOne(
         {
           _id: new mongoose.Types.ObjectId(caseId),
           case_owner: new mongoose.Types.ObjectId(id),
         },
         { $set: { ...payload } },
       );
+      await agenda.now(AgendaJobs.processJsonService, {
+        case_owner: id,
+        id: caseId,
+        ...payload,
+      });
     }
     return res
       .status(HttpStatus.OK)
