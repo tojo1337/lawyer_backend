@@ -1,4 +1,4 @@
-import { MongoDBVector } from "@mastra/mongodb";
+import { QdrantVector } from "@mastra/qdrant";
 import { appConfig } from "../config/app.config.js";
 
 // Agenda singleton class
@@ -11,10 +11,9 @@ class VectorDbInstance {
     }
     try {
       const mongo_address = appConfig.appDb;
-      this.connection = new MongoDBVector({
-        id: "mongodb-vector",
-        uri: appConfig.vectorDbUri,
-        dbName: appConfig.vectorDbName
+      this.connection = new QdrantVector({
+        id: "qdrant-vector-client",
+        uri: appConfig.vectorDbUrl,
       });
       VectorDbInstance.instance = this;
     } catch (err) {

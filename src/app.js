@@ -7,12 +7,12 @@ import dbConnector from "./db/db.connector.js";
 import { logger } from "./config/pino.config.js";
 import { appConfig } from "./config/app.config.js";
 import { agenda } from "./config/agenda.config.js";
+import { vectorDb } from "./db/vector-db.connector.js";
 import { route as authRoute } from "./routes/auth.route.js";
 import { route as pingRoute } from "./routes/ping.route.js";
 import { route as casesRoute } from "./routes/cases.route.js";
 import { route as commonRoute } from "./routes/common.route.js";
 import { route as caseFileRoute } from "./routes/case-file.route.js";
-import { vectorDb } from "./db/vector-db.connector.js";
 import { vectorCollectionCreator } from "./utils/vector-collection-creator.js";
 
 const app = express();
@@ -24,7 +24,6 @@ async function main() {
   try {
     await dbConnector();
     await agenda.start();
-    await vectorDb.connect();
     await vectorCollectionCreator();
 
     app.use("/test", pingRoute);

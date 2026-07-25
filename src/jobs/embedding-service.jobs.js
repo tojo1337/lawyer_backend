@@ -26,14 +26,11 @@ agenda.define(AgendaJobs.processJsonService, async (job) => {
       model: new ModelRouterEmbeddingModel("google/gemini-embedding-001"),
       values: docChunk.map((chunk) => chunk.text),
     });
-    // Uncomment this when everything is working
+    const metaVal = (embeddings || []).map(() => ({ id, case_owner }));
     await vectorDb.upsert({
       indexName: vectorCollections.caseDataVec,
       vectors: embeddings,
-      metadata: {
-        id,
-        case_owner,
-      },
+      metadata: metaVal,
     });
   } catch (err) {
     logger.error({
@@ -43,4 +40,4 @@ agenda.define(AgendaJobs.processJsonService, async (job) => {
 });
 
 // Need to add vector embedding for pdf files
-agenda.define()
+agenda.define();
