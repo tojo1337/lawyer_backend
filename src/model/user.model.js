@@ -23,6 +23,18 @@ const UserSchema = new mongoose.Schema(
       enum: AuthType,
       default: AuthType.email_login,
     },
+    is_active: {
+      type: Boolean,
+      default: true,
+    },
+    is_online: {
+      type: Boolean,
+      default: false,
+    },
+    socket_id: {
+      type: String,
+      default: "",
+    },
   },
   {
     versionKey: false,
