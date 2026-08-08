@@ -18,6 +18,7 @@ import { socketService } from "./config/socket.config.js";
 import { SocketEvent } from "./enum/socket-event.js";
 import { EventTypes } from "./enum/events.js";
 import { socketMiddleware } from "./middleware/socket.middleware.js";
+import aiChat from "./ws/ai-chat.js";
 
 const app = express();
 const server = createServer(app);
@@ -33,7 +34,7 @@ async function main() {
   try {
     await dbConnector();
     await agenda.start();
-    await vectorCollectionCreator();
+    // await vectorCollectionCreator();
 
     app.use("/test", pingRoute);
     app.use("/auth", authRoute);
@@ -42,21 +43,21 @@ async function main() {
     app.use("/case-file", caseFileRoute);
 
     // Add socket.io related things in here
-    io.use(socketMiddleware);
-    io.on(SocketEvent.connect, (socket) => {
-      // Add action over here
-      // chatApp(io, socket);
+    // io.use(socketMiddleware);
+    // io.on(SocketEvent.connect, (socket) => {
+    //   // Add action over here
+    //   aiChat(io, socket);
 
-      // Clean up
-      socket.on(SocketEvent.disconnect, async () => {
-        // let wsData = socket.wsData;
-        // if (wsData) {
-        //   await sokcetDisconnectionHandler(wsData.uuid);
-        //   const remainingUserList = await getAllActiveUsers();
-        //   io.emit(SocketEvent.active_list, remainingUserList);
-        // }
-      });
-    });
+    //   // Clean up
+    //   socket.on(SocketEvent.disconnect, async () => {
+    //     // let wsData = socket.wsData;
+    //     // if (wsData) {
+    //     //   await sokcetDisconnectionHandler(wsData.uuid);
+    //     //   const remainingUserList = await getAllActiveUsers();
+    //     //   io.emit(SocketEvent.active_list, remainingUserList);
+    //     // }
+    //   });
+    // });
 
     server.listen(appConfig.port, () => {
       logger.info(`Server started at port : ${appConfig.port}`);

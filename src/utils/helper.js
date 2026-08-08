@@ -9,7 +9,7 @@ const cores = os.cpus().length;
 
 export async function promiseCaller(arrs) {
   const limit = pLimit(cores);
-  let arr = arrs.map((item) => limit(() => item));
+  let arr = arrs.map((item) => limit(() => item()));
   const resp = await Promise.all(arr);
   return resp;
 }

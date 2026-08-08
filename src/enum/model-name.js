@@ -5,5 +5,6 @@ export const ModelName = Object.freeze({
   CourtName: "court-name",
   CurrentStage: "current-stage",
   Particulars: "particulats",
-  FileModel: "file"
+  FileModel: "file",
+  VectorTracker: "vector-tracker-mdoel",
 });
