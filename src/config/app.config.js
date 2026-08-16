@@ -2,7 +2,6 @@ export const appConfig = Object.freeze({
   baseUrl: process.env.BASE_URL,
   port: process.env.PORT,
   release: process.env.RELEASE,
-  jwtSecret: process.env.SECRET,
   otpSecret: process.env.OTPSEC,
   appDb: process.env.DB_CONNECTOR,
   smtpHost: process.env.SMTP_HOST,
@@ -13,4 +12,5 @@ export const appConfig = Object.freeze({
   googleClientId: process.env.GOOGLE_CLIENT_ID,
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
   vectorDbUrl: process.env.VECTOR_DB_URL,
+  jwksUri: process.env.JWKS_URI
 });
