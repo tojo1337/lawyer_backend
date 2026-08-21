@@ -29,9 +29,9 @@ agenda.define(AgendaJobs.processJsonService, async (job) => {
     } = job.attrs.data || {};
     if (!case_owner || !id || !payload) return;
     const [courtNames, particulars, currentStage] = await helper.promiseCaller([
-      CourtNameModel.find({}).lean(),
-      ParticularsModel.find({}).lean(),
-      CurrentStageModel.find({}).lean(),
+      () => CourtNameModel.find({}).lean(),
+      () => ParticularsModel.find({}).lean(),
+      () => CurrentStageModel.find({}).lean(),
     ]);
     const courtNameItem = courtNames.find(
       (item) => item._id.toString() === court_name,

@@ -70,19 +70,21 @@ route.get("/get-linked-uploaded-files", async (req, res) => {
     const endIndex = pageVal * limitVal;
 
     const [caseData, fileData] = await helper.promiseCaller([
-      CaseModel.find({
-        _id: new mongoose.Types.ObjectId(caseId),
-        case_owner: new mongoose.Types.ObjectId(id),
-        is_deleted: false,
-        is_completed: false,
-      }).lean(),
-      FileModel.find({
-        case_link: new mongoose.Types.ObjectId(caseId),
-        is_deleted: false,
-      })
-        .skip(startIndex)
-        .limit(endIndex)
-        .lean(),
+      () =>
+        CaseModel.find({
+          _id: new mongoose.Types.ObjectId(caseId),
+          case_owner: new mongoose.Types.ObjectId(id),
+          is_deleted: false,
+          is_completed: false,
+        }).lean(),
+      () =>
+        FileModel.find({
+          case_link: new mongoose.Types.ObjectId(caseId),
+          is_deleted: false,
+        })
+          .skip(startIndex)
+          .limit(endIndex)
+          .lean(),
     ]);
     if (!caseData.length)
       return res
@@ -166,28 +168,31 @@ route.get("/remove-linked-file", async (req, res) => {
         .status(HttpStatus.ERROR)
         .json({ message: "Missning caseId or fileId" });
     const [authUser, fileRes] = await helper.promiseCaller([
-      CaseModel.find({
-        _id: new mongoose.Types.ObjectId(caseId),
-        case_owner: new mongoose.Types.ObjectId(id),
-      }).lean(),
-      FileModel.findOne({
-        _id: new mongoose.Types.ObjectId(fileId),
-        case_link: new mongoose.Types.ObjectId(caseId),
-      }).lean(),
+      () =>
+        CaseModel.find({
+          _id: new mongoose.Types.ObjectId(caseId),
+          case_owner: new mongoose.Types.ObjectId(id),
+        }).lean(),
+      () =>
+        FileModel.findOne({
+          _id: new mongoose.Types.ObjectId(fileId),
+          case_link: new mongoose.Types.ObjectId(caseId),
+        }).lean(),
     ]);
     if (!authUser.length)
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "User not authorized to perform the given action" });
     await helper.promiseCaller([
-      unlink(fileRes.file_path),
-      FileModel.updateOne(
-        {
-          _id: new mongoose.Types.ObjectId(fileId),
-          case_link: new mongoose.Types.ObjectId(caseId),
-        },
-        { $set: { is_deleted: true } },
-      ),
+      () => unlink(fileRes.file_path),
+      () =>
+        FileModel.updateOne(
+          {
+            _id: new mongoose.Types.ObjectId(fileId),
+            case_link: new mongoose.Types.ObjectId(caseId),
+          },
+          { $set: { is_deleted: true } },
+        ),
     ]);
     return res
       .status(HttpStatus.OK)

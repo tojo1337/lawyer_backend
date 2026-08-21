@@ -53,9 +53,9 @@ route.get("/get-all-cases", async (req, res) => {
     }
 
     let [courtNames, particulars, currentStages] = await helper.promiseCaller([
-      CourtNameModel.find({}).lean(),
-      ParticularsModel.find({}).lean(),
-      CurrentStageModel.find({}).lean(),
+      () => CourtNameModel.find({}).lean(),
+      () => ParticularsModel.find({}).lean(),
+      () => CurrentStageModel.find({}).lean(),
     ]);
 
     courtNames = (courtNames || []).map((item) => {
@@ -92,7 +92,10 @@ route.get("/get-all-cases", async (req, res) => {
         ...query,
         is_deleted: false,
         is_completed: false,
-      }).skip(startIndex).limit(endIndex).lean()) || []
+      })
+        .skip(startIndex)
+        .limit(endIndex)
+        .lean()) || []
     ).map((item) => {
       const caseId = item._id.toString();
       const {
@@ -137,7 +140,9 @@ route.get("/get-all-cases", async (req, res) => {
       };
     });
 
-    return res.status(HttpStatus.OK).json({ data: allCaseList || [], message: "Data fetched with success" });
+    return res
+      .status(HttpStatus.OK)
+      .json({ data: allCaseList || [], message: "Data fetched with success" });
   } catch (err) {
     logger.error({
       url: req.originalUrl,
@@ -337,7 +342,7 @@ route.get("/search-case-entry", async (req, res) => {
       return res
         .status(HttpStatus.OK)
         .json({ message: "Nothing to search in here", data: [] });
-    
+
     const query = {};
     if (type === "1") {
       query["next_date"] = {
@@ -354,9 +359,9 @@ route.get("/search-case-entry", async (req, res) => {
     }
 
     let [courtNames, particulars, currentStages] = await helper.promiseCaller([
-      CourtNameModel.find({}).lean(),
-      ParticularsModel.find({}).lean(),
-      CurrentStageModel.find({}).lean(),
+      () => CourtNameModel.find({}).lean(),
+      () => ParticularsModel.find({}).lean(),
+      () => CurrentStageModel.find({}).lean(),
     ]);
 
     courtNames = (courtNames || []).map((item) => {
@@ -393,7 +398,7 @@ route.get("/search-case-entry", async (req, res) => {
           { litigant_contact: { $regex: payload, $options: "i" } },
           { year: { $regex: payload, $options: "i" } },
         ],
-        ...query
+        ...query,
       }).lean()) || []
     ).map((item) => {
       const caseId = item._id.toString();
@@ -464,9 +469,9 @@ route.get("/missing-advance-date-cases", async (req, res) => {
         .json({ message: "Not authorized to perform the action" });
 
     let [courtNames, particulars, currentStages] = await helper.promiseCaller([
-      CourtNameModel.find({}).lean(),
-      ParticularsModel.find({}).lean(),
-      CurrentStageModel.find({}).lean(),
+      () => CourtNameModel.find({}).lean(),
+      () => ParticularsModel.find({}).lean(),
+      () => CurrentStageModel.find({}).lean(),
     ]);
 
     courtNames = (courtNames || []).map((item) => {
@@ -502,7 +507,7 @@ route.get("/missing-advance-date-cases", async (req, res) => {
         case_owner: new mongoose.Types.ObjectId(id),
         next_date: { $lt: today },
         is_deleted: false,
-        is_completed: false
+        is_completed: false,
       })
         .skip(startIndex)
         .limit(endIndex)
@@ -613,9 +618,9 @@ route.get("/search-completed-case-entry", async (req, res) => {
         .json({ message: "Nothing to search in here", data: [] });
 
     let [courtNames, particulars, currentStages] = await helper.promiseCaller([
-      CourtNameModel.find({}).lean(),
-      ParticularsModel.find({}).lean(),
-      CurrentStageModel.find({}).lean(),
+      () => CourtNameModel.find({}).lean(),
+      () => ParticularsModel.find({}).lean(),
+      () => CurrentStageModel.find({}).lean(),
     ]);
 
     courtNames = (courtNames || []).map((item) => {
