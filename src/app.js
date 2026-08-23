@@ -34,7 +34,7 @@ async function main() {
   try {
     await dbConnector();
     await agenda.start();
-    // await vectorCollectionCreator();
+    await vectorCollectionCreator();
 
     app.use("/test", pingRoute);
     app.use("/auth", authRoute);
