@@ -263,11 +263,11 @@ route.post("/make-or-edit-cases", async (req, res) => {
         case_owner: new mongoose.Types.ObjectId(id),
         ...payload,
       });
-      // await agenda.now(AgendaJobs.processJsonService, {
-      //   id: responseData._id.toString(),
-      //   case_owner: id,
-      //   ...payload,
-      // });
+      await agenda.now(AgendaJobs.processJsonService, {
+        id: responseData._id.toString(),
+        case_owner: id,
+        ...payload,
+      });
     } else {
       const responseData = await CaseModel.updateOne(
         {
@@ -276,11 +276,11 @@ route.post("/make-or-edit-cases", async (req, res) => {
         },
         { $set: { ...payload } },
       );
-      // await agenda.now(AgendaJobs.processJsonService, {
-      //   case_owner: id,
-      //   id: caseId,
-      //   ...payload,
-      // });
+      await agenda.now(AgendaJobs.processJsonService, {
+        case_owner: id,
+        id: caseId,
+        ...payload,
+      });
     }
     return res
       .status(HttpStatus.OK)

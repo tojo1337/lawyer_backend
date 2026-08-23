@@ -28,11 +28,35 @@ agenda.define(AgendaJobs.processJsonService, async (job) => {
       ...payload
     } = job.attrs.data || {};
     if (!case_owner || !id || !payload) return;
-    const [courtNames, particulars, currentStage] = await helper.promiseCaller([
+    const [
+      courtNames,
+      particulars,
+      currentStage,
+      exsitingEmbeddingsOfSameCase,
+    ] = await helper.promiseCaller([
       () => CourtNameModel.find({}).lean(),
       () => ParticularsModel.find({}).lean(),
       () => CurrentStageModel.find({}).lean(),
+      () =>
+        VectorTrackerModel.find({ owner_id: case_owner, case_id: id }).lean(),
     ]);
+
+    // This will ensure that the update operation works perfectly
+    if(exsitingEmbeddingsOfSameCase.length){
+      const embeddingIds = exsitingEmbeddingsOfSameCase.map(
+        (item) => item.embedding_id,
+      );
+      await helper.promiseCaller([
+        () =>
+          VectorTrackerModel.deleteMany({ owner_id: case_owner, case_id: id }),
+        () =>
+          vectorDb.deletVectors({
+            indexName: vectorCollections.caseDataVec,
+            ids: embeddingIds,
+          }),
+      ]);
+    }
+
     const courtNameItem = courtNames.find(
       (item) => item._id.toString() === court_name,
     );
@@ -60,16 +84,21 @@ agenda.define(AgendaJobs.processJsonService, async (job) => {
       id,
       case_owner,
     }));
-    await vectorDb.upsert({
-      indexName: vectorCollections.caseDataVec,
-      vectors: embeddings,
-      metadata: metaVal,
-      ids: uuidMap,
-    });
     const dbCallMapper = uuidMap.map((embedding_id) => {
-      return { owner_id: id, case_id: case_owner, embedding_id };
+      return { owner_id: case_owner, case_id: id, embedding_id };
     });
-    await VectorTrackerModel.insertMany(dbCallMapper);
+
+    // This is where the db insertion will occur
+    await helper.promiseCaller([
+      () =>
+        vectorDb.upsert({
+          indexName: vectorCollections.caseDataVec,
+          vectors: embeddings,
+          metadata: metaVal,
+          ids: uuidMap,
+        }),
+      () => VectorTrackerModel.insertMany(dbCallMapper),
+    ]);
   } catch (err) {
     logger.error({
       error: err.stack,
@@ -78,4 +107,34 @@ agenda.define(AgendaJobs.processJsonService, async (job) => {
 });
 
 // Need to add vector embedding for pdf files
-agenda.define();
+agenda.define(AgendaJobs.deleteJsonEmbeds, async (job)=>{
+  try{
+    const { case_owner = "", case_id = "" } = job.attrs.data || {};
+    if(!case_owner || !case_id) return;
+
+    const existingEntry = await VectorTrackerModel.find({
+      owner_id: case_owner,
+      case_id: case_id
+    }).lean();
+    if(!existingEntry.length) return;
+    const mappedEmbIds = (existingEntry || []).map((item) => item.embedding_id);
+    
+    // Delete operation is performed in here
+    await helper.promiseCaller([
+      () =>
+        VectorTrackerModel.deleteMany({
+          owner_id: case_owner,
+          case_id: case_id,
+        }),
+      () =>
+        vectorDb.deleteVectors({
+          indexName: vectorCollections.caseDataVec,
+          ids: mappedEmbIds,
+        }),
+    ]);
+  }catch(err){
+    logger.error({
+      error: err.stack,
+    });
+  }
+});
