@@ -12,5 +12,9 @@ export const appConfig = Object.freeze({
   googleClientId: process.env.GOOGLE_CLIENT_ID,
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
   vectorDbUrl: process.env.VECTOR_DB_URL,
-  jwksUri: process.env.JWKS_URI
+  jwksUri: process.env.JWKS_URI,
+  semanticValue: process.env.SEMANTIC_VALUE,
+  vectorValue: process.env.VECTOR_VALUE,
+  positionValue: process.env.POSITION_VALUE,
+  topkValue: process.env.TOPK_VALUE
 });

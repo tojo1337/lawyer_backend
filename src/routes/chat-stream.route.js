@@ -5,12 +5,13 @@ import {
   MastraAgentRelevanceScorer,
   rerankWithScorer as rerank,
 } from "@mastra/rag";
-import { logger } from "../config/pino.config";
-import { HttpStatus } from "../enum/http-status";
-import { vectorDb } from "../db/vector-db.connector";
-import { vectorCollections } from "../enum/vector-collections";
+import { logger } from "../config/pino.config.js";
+import { HttpStatus } from "../enum/http-status.js";
+import { vectorDb } from "../db/vector-db.connector.js";
+import { vectorCollections } from "../enum/vector-collections.js";
 import { ModelRouterEmbeddingModel } from "@mastra/core/llm";
 import { Readable } from "node:stream";
+import { appConfig } from "../config/app.config.js";
 
 const route = Router();
 
@@ -36,7 +37,7 @@ route.post("/chat-stream-data", async (req, res) => {
     const fetchFromDb = await vectorDb.query({
       indexName: vectorCollections.caseDataVec,
       queryVector: embeddings,
-      topK: 10,
+      topK: appConfig.topkValue,
       filter: {
         case_owner: id,
       },
@@ -54,11 +55,11 @@ route.post("/chat-stream-data", async (req, res) => {
         scorer: relevanceProvider,
         options: {
           weights: {
-            semantic: 0.5,
-            vector: 0.3,
-            position: 0.2,
+            semantic: appConfig.semanticValue,
+            vector: appConfig.vectorValue,
+            position: appConfig.positionValue,
           },
-          topK: 10,
+          topK: appConfig.topkValue,
         },
       }),
     ).pipe(res);

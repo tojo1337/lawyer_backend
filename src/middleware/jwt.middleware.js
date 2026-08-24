@@ -44,7 +44,6 @@ export async function createOTFUser(tokenObj) {
       email: tokenObj?.email,
       is_active: true,
       is_online: false,
-      socket_id: "",
     };
     const existingUser = await UserModel.findOne({
       user_id: hashedUserId,

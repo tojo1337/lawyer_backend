@@ -24,11 +24,7 @@ const UserSchema = new mongoose.Schema(
     is_online: {
       type: Boolean,
       default: false,
-    },
-    socket_id: {
-      type: String,
-      default: "",
-    },
+    }
   },
   {
     versionKey: false,

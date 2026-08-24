@@ -13,20 +13,12 @@ import { route as pingRoute } from "./routes/ping.route.js";
 import { route as casesRoute } from "./routes/cases.route.js";
 import { route as commonRoute } from "./routes/common.route.js";
 import { route as caseFileRoute } from "./routes/case-file.route.js";
+import { route as chatStreamRoute } from "./routes/chat-stream.route.js";
 import { vectorCollectionCreator } from "./utils/vector-collection-creator.js";
-import { socketService } from "./config/socket.config.js";
-import { SocketEvent } from "./enum/socket-event.js";
 import { EventTypes } from "./enum/events.js";
-import { socketMiddleware } from "./middleware/socket.middleware.js";
-import aiChat from "./ws/ai-chat.js";
 
 const app = express();
 const server = createServer(app);
-
-const socketServiceWrapper = socketService;
-socketServiceWrapper.server = server;
-socketServiceWrapper.config = {};
-const io = socketServiceWrapper.makeSocket();
 
 async function main() {
   app.use(json());
@@ -41,23 +33,7 @@ async function main() {
     app.use("/cases", casesRoute);
     app.use("/common", commonRoute);
     app.use("/case-file", caseFileRoute);
-
-    // Add socket.io related things in here
-    // io.use(socketMiddleware);
-    // io.on(SocketEvent.connect, (socket) => {
-    //   // Add action over here
-    //   aiChat(io, socket);
-
-    //   // Clean up
-    //   socket.on(SocketEvent.disconnect, async () => {
-    //     // let wsData = socket.wsData;
-    //     // if (wsData) {
-    //     //   await sokcetDisconnectionHandler(wsData.uuid);
-    //     //   const remainingUserList = await getAllActiveUsers();
-    //     //   io.emit(SocketEvent.active_list, remainingUserList);
-    //     // }
-    //   });
-    // });
+    app.use("/chat", chatStreamRoute);
 
     server.listen(appConfig.port, () => {
       logger.info(`Server started at port : ${appConfig.port}`);
