@@ -1,8 +1,8 @@
 import { embed } from "ai";
 import { Router } from "express";
 import {
-  MDocument,
   MastraAgentRelevanceScorer,
+  MDocument,
   rerankWithScorer as rerank,
 } from "@mastra/rag";
 import { logger } from "../config/pino.config.js";
@@ -12,6 +12,11 @@ import { vectorCollections } from "../enum/vector-collections.js";
 import { ModelRouterEmbeddingModel } from "@mastra/core/llm";
 import { Readable } from "node:stream";
 import { appConfig } from "../config/app.config.js";
+import { Agent } from "@mastra/core/agent";
+import {
+  createAnswerRelevancyScorer,
+  createBiasScorer,
+} from "@mastra/evals/scorers/prebuilt";
 
 const route = Router();
 
@@ -42,27 +47,25 @@ route.post("/chat-stream-data", async (req, res) => {
         case_owner: id,
       },
     });
-    const relevanceProvider = new MastraAgentRelevanceScorer(
+
+    const relevanceScorer = new MastraAgentRelevanceScorer(
       "relevance-scorer",
-      "openai/gpt-5.6-sol",
+      "google/gemini-2.5-flash",
     );
 
-    // Response streaming
-    Readable.from(
-      rerank({
-        results: initialResults,
-        query,
-        scorer: relevanceProvider,
-        options: {
-          weights: {
-            semantic: appConfig.semanticValue,
-            vector: appConfig.vectorValue,
-            position: appConfig.positionValue,
-          },
-          topK: appConfig.topkValue,
+    const rerankedData = rerank({
+      results: fetchFromDb,
+      query,
+      scorer: relevanceScorer,
+      options: {
+        weights: {
+          semantic: appConfig.semanticValue,
+          vector: appConfig.vectorValue,
+          position: appConfig.positionValue,
         },
-      }),
-    ).pipe(res);
+        topK: appConfig.topkValue,
+      },
+    });
   } catch (err) {
     logger.error({
       url: req.originalUrl,
