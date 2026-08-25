@@ -20,6 +20,22 @@ import {
 
 const route = Router();
 
+const courtDiaryChatAgent = new Agent({
+  id: "court-diary-chat-agent",
+  name: "court diary chat agent",
+  instructions: `
+                You are a helpful assistant that answers questions using retrieved case data.
+                Rules:
+                - Use the provided context as the primary source of truth.
+                - Do not invent facts that are not present in the context.
+                - If the context does not contain enough information to answer the question,
+                  clearly say that you do not have enough information.
+                - Give a concise and direct answer.
+                - Do not mention internal relevance scores or the reranking process.
+                `,
+  model: appConfig.aiModel,
+});
+
 route.post("/chat-stream-data", async (req, res) => {
   try {
     const { id } = req.userData || {};
@@ -35,27 +51,40 @@ route.post("/chat-stream-data", async (req, res) => {
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.setHeader("Transfer-Encoding", "chunked");
 
-    const { embeddings } = await embed({
-      values: chat_data,
-      model: new ModelRouterEmbeddingModel("google/gemini-embedding-001"),
+    const { embedding: resultingEmbedding } = await embed({
+      value: chat_data,
+      model: new ModelRouterEmbeddingModel(appConfig.embedModel),
     });
     const fetchFromDb = await vectorDb.query({
       indexName: vectorCollections.caseDataVec,
-      queryVector: embeddings,
-      topK: appConfig.topkValue,
+      queryVector: resultingEmbedding,
+      topK: Number.isInteger(Number(appConfig.topkValue))
+        ? Number(appConfig.topK)
+        : 10,
       filter: {
+        // must: [
+        //   {
+        //     key: 'case_owner',
+        //     match: {
+        //       value: id
+        //     }
+        //   }
+        // ]
         case_owner: id,
       },
     });
 
+    if (!fetchFromDb.length)
+      return res.end("No relevant infromation found from db");
+
     const relevanceScorer = new MastraAgentRelevanceScorer(
       "relevance-scorer",
-      "google/gemini-2.5-flash",
+      appConfig.aiModel,
     );
 
-    const rerankedData = rerank({
+    const rerankedData = await rerank({
       results: fetchFromDb,
-      query,
+      query: resultingEmbedding,
       scorer: relevanceScorer,
       options: {
         weights: {
@@ -63,9 +92,37 @@ route.post("/chat-stream-data", async (req, res) => {
           vector: appConfig.vectorValue,
           position: appConfig.positionValue,
         },
-        topK: appConfig.topkValue,
+        topK: Number.isInteger(Number(appConfig.topkValue))
+        ? Number(appConfig.topK)
+        : 10,
       },
     });
+
+    if (!rerankedData.length) return res.end("No relevant data fount from db");
+
+    const contextBuilding = rerankedData.map((item, index) => {
+      const textData = item.result?.document || "";
+      return `--- SOURCE ${index + 1} ---
+              ${textData}`.join("\n");
+    });
+
+    const prompt = `Answer the user's question using the retrieved context below.
+                    USER QUESTION:
+                    ${chat_data}
+                    RETRIEVED CONTEXT:
+                    ${contextBuilding}
+                    IMPORTANT:
+                    - Answer only using information supported by the retrieved context.
+                    - Do not make up information.
+                    - If the context does not contain the answer, say that you don't have enough information.
+                    - Do not mention relevance scores.
+                    - Do not mention the reranking process.
+                    Now answer the user's question.`;
+    const answer = await courtDiaryChatAgent.stream(prompt);
+    for await (let chunk of answer) {
+      res.send(chunk);
+    }
+    return res.end();
   } catch (err) {
     logger.error({
       url: req.originalUrl,
@@ -75,7 +132,7 @@ route.post("/chat-stream-data", async (req, res) => {
     });
     return res
       .status(HttpStatus.ERROR)
-      .json({ message: "Something went wrong" });
+      .end("Something went wrong");
   }
 });
 

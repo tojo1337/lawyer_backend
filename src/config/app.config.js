@@ -16,5 +16,7 @@ export const appConfig = Object.freeze({
   semanticValue: process.env.SEMANTIC_VALUE,
   vectorValue: process.env.VECTOR_VALUE,
   positionValue: process.env.POSITION_VALUE,
-  topkValue: process.env.TOPK_VALUE
+  topkValue: process.env.TOPK_VALUE,
+  aiModel: process.env.AI_MODEL,
+  embedModel: process.env.EMBED_MODEL,
 });
