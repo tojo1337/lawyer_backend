@@ -19,4 +19,6 @@ export const appConfig = Object.freeze({
   topkValue: process.env.TOPK_VALUE,
   aiModel: process.env.AI_MODEL,
   embedModel: process.env.EMBED_MODEL,
+  maxChunkSize: process.env.MAX_CHUNK_SIZE,
+  maxOverlaps: process.env.MAX_OVERLAPS,
 });

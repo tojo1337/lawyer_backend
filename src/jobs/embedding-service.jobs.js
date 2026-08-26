@@ -15,6 +15,7 @@ import { CourtNameModel } from "../model/court-name.model.js";
 import { ParticularsModel } from "../model/particulars.model.js";
 import { CurrentStageModel } from "../model/current-stage.mdoel.js";
 import { VectorTrackerModel } from "../model/vector-tracker.model.js";
+import { appConfig } from "../config/app.config.js";
 
 // Need to test this vector embedding as it will probably crash
 agenda.define(AgendaJobs.processJsonService, async (job) => {
@@ -42,7 +43,7 @@ agenda.define(AgendaJobs.processJsonService, async (job) => {
     ]);
 
     // This will ensure that the update operation works perfectly
-    if(exsitingEmbeddingsOfSameCase.length){
+    if (exsitingEmbeddingsOfSameCase.length) {
       const embeddingIds = exsitingEmbeddingsOfSameCase.map(
         (item) => item.embedding_id,
       );
@@ -69,20 +70,39 @@ agenda.define(AgendaJobs.processJsonService, async (job) => {
     payload["court_name"] = courtNameItem.name || "";
     payload["current_stage"] = currentStafeItem.name || "";
     payload["case_particulars"] = particularsItem.name || "";
-    const document = MDocument.fromText(JSON.stringify(payload));
+
+    const naturalLangPayload = `
+                                Date of registration: ${payload.date_of_registration}
+                                Court name : ${payload.court_name}
+                                Case number : ${payload.case_number}
+                                Litigant : ${payload.litigant}
+                                Litigant contact : ${payload.litigant_contact}
+                                Case particulars : ${payload.case_particulars}
+                                Year : ${payload.year}
+                                Current stage : ${payload.current_stage}
+                                Previous date : ${payload.previous_date}
+                                Next date : ${payload.next_date}
+                              `;
+                              
+    const document = MDocument.fromText(naturalLangPayload);
     const docChunk = await document.chunk({
-      strategy: "json",
-      maxSize: 100,
-      overlap: 10,
+      strategy: 'recursive',
+      maxSize: Number.isInteger(Number(appConfig.maxChunkSize))
+        ? Number(appConfig.maxChunkSize)
+        : 100,
+      overlap: Number.isInteger(Number(appConfig.maxOverlaps))
+        ? Number(appConfig.maxOverlaps)
+        : 10,
     });
     const { embeddings } = await embedMany({
-      model: new ModelRouterEmbeddingModel("google/gemini-embedding-001"),
+      model: new ModelRouterEmbeddingModel(appConfig.embedModel),
       values: docChunk.map((chunk) => chunk.text),
     });
     const uuidMap = (embeddings || []).map(() => uuid());
     const metaVal = (embeddings || []).map((_, index) => ({
       id,
       case_owner,
+      text: docChunk[index].text,
     }));
     const dbCallMapper = uuidMap.map((embedding_id) => {
       return { owner_id: case_owner, case_id: id, embedding_id };
@@ -107,18 +127,18 @@ agenda.define(AgendaJobs.processJsonService, async (job) => {
 });
 
 // Need to add vector embedding for pdf files
-agenda.define(AgendaJobs.deleteJsonEmbeds, async (job)=>{
-  try{
+agenda.define(AgendaJobs.deleteJsonEmbeds, async (job) => {
+  try {
     const { case_owner = "", case_id = "" } = job.attrs.data || {};
-    if(!case_owner || !case_id) return;
+    if (!case_owner || !case_id) return;
 
     const existingEntry = await VectorTrackerModel.find({
       owner_id: case_owner,
-      case_id: case_id
+      case_id: case_id,
     }).lean();
-    if(!existingEntry.length) return;
+    if (!existingEntry.length) return;
     const mappedEmbIds = (existingEntry || []).map((item) => item.embedding_id);
-    
+
     // Delete operation is performed in here
     await helper.promiseCaller([
       () =>
@@ -132,7 +152,7 @@ agenda.define(AgendaJobs.deleteJsonEmbeds, async (job)=>{
           ids: mappedEmbIds,
         }),
     ]);
-  }catch(err){
+  } catch (err) {
     logger.error({
       error: err.stack,
     });

@@ -38,7 +38,8 @@ const courtDiaryChatAgent = new Agent({
 
 route.post("/chat-stream-data", async (req, res) => {
   try {
-    const { id } = req.userData || {};
+    // const { id } = req.userData || {};
+    const id = '6a83324ece9ffa7ae1e814d2';
     const { chat_data = "" } = req.body || {};
     if (!id)
       return res.status(HttpStatus.ERROR).json({ message: "Not authorized" });
@@ -59,7 +60,7 @@ route.post("/chat-stream-data", async (req, res) => {
       indexName: vectorCollections.caseDataVec,
       queryVector: resultingEmbedding,
       topK: Number.isInteger(Number(appConfig.topkValue))
-        ? Number(appConfig.topK)
+        ? Number(appConfig.topkValue)
         : 10,
       filter: {
         // must: [
@@ -84,27 +85,33 @@ route.post("/chat-stream-data", async (req, res) => {
 
     const rerankedData = await rerank({
       results: fetchFromDb,
-      query: resultingEmbedding,
+      query: chat_data,
       scorer: relevanceScorer,
       options: {
         weights: {
-          semantic: appConfig.semanticValue,
-          vector: appConfig.vectorValue,
-          position: appConfig.positionValue,
+          semantic: Number.isInteger(Number(appConfig.semanticValue))
+            ? Number(appConfig.semanticValue)
+            : 0.5,
+          vector: Number.isInteger(Number(appConfig.vectorValue))
+            ? Number(appConfig.vectorValue)
+            : 0.3,
+          position: Number.isInteger(Number(appConfig.positionValue))
+            ? Number(appConfig.positionValue)
+            : 0.2,
         },
         topK: Number.isInteger(Number(appConfig.topkValue))
-        ? Number(appConfig.topK)
-        : 10,
+          ? Number(appConfig.topkValue)
+          : 10,
       },
     });
 
     if (!rerankedData.length) return res.end("No relevant data fount from db");
 
     const contextBuilding = rerankedData.map((item, index) => {
-      const textData = item.result?.document || "";
+      const textData = item.result?.metadata?.text || "";
       return `--- SOURCE ${index + 1} ---
-              ${textData}`.join("\n");
-    });
+              ${textData}`;
+    }).join('\n');
 
     const prompt = `Answer the user's question using the retrieved context below.
                     USER QUESTION:
@@ -119,8 +126,8 @@ route.post("/chat-stream-data", async (req, res) => {
                     - Do not mention the reranking process.
                     Now answer the user's question.`;
     const answer = await courtDiaryChatAgent.stream(prompt);
-    for await (let chunk of answer) {
-      res.send(chunk);
+    for await (let chunk of answer.textStream) {
+      res.write(chunk);
     }
     return res.end();
   } catch (err) {
