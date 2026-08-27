@@ -17,8 +17,11 @@ import {
   createAnswerRelevancyScorer,
   createBiasScorer,
 } from "@mastra/evals/scorers/prebuilt";
+import jwtMiddleware from "../middleware/jwt.middleware.js";
 
 const route = Router();
+
+route.use(jwtMiddleware);
 
 const courtDiaryChatAgent = new Agent({
   id: "court-diary-chat-agent",
@@ -38,8 +41,7 @@ const courtDiaryChatAgent = new Agent({
 
 route.post("/chat-stream-data", async (req, res) => {
   try {
-    // const { id } = req.userData || {};
-    const id = '6a83324ece9ffa7ae1e814d2';
+    const { id } = req.userData || {};
     const { chat_data = "" } = req.body || {};
     if (!id)
       return res.status(HttpStatus.ERROR).json({ message: "Not authorized" });
