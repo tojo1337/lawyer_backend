@@ -1,5 +1,5 @@
 import { embed } from "ai";
-import { Router } from "express";
+import { response, Router } from "express";
 import {
   MastraAgentRelevanceScorer,
   MDocument,
@@ -18,6 +18,10 @@ import {
   createBiasScorer,
 } from "@mastra/evals/scorers/prebuilt";
 import jwtMiddleware from "../middleware/jwt.middleware.js";
+import { ChatHistoryModel } from "../model/chat-history.model.js";
+import mongoose from "mongoose";
+import * as helper from "../utils/helper.js";
+import { DateTime } from "luxon";
 
 const route = Router();
 
@@ -49,6 +53,23 @@ route.post("/chat-stream-data", async (req, res) => {
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "No query was receivced" });
+
+    // This need to check this one out properly
+    const currentDate = DateTime.now();
+    const [currentPlan, recordedChats] = await helper.promiseCaller([
+      () => helper.getCurrentPlan(id),
+      () =>
+        ChatHistoryModel.find({
+          chat_owner: new mongoose.Types.ObjectId(id),
+          created_at: {
+            $gte: currentDate.startOf("day").toJSDate(),
+            $lte: currentDate.endOf("day").toJSDate(),
+          },
+        }).lean(),
+    ]);
+
+    if (currentPlan.chat_per_day < recordedChats.length + 1)
+      return res.end("chat limit reached for current date");
 
     // These are required for streaming
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -109,11 +130,13 @@ route.post("/chat-stream-data", async (req, res) => {
 
     if (!rerankedData.length) return res.end("No relevant data fount from db");
 
-    const contextBuilding = rerankedData.map((item, index) => {
-      const textData = item.result?.metadata?.text || "";
-      return `--- SOURCE ${index + 1} ---
+    const contextBuilding = rerankedData
+      .map((item, index) => {
+        const textData = item.result?.metadata?.text || "";
+        return `--- SOURCE ${index + 1} ---
               ${textData}`;
-    }).join('\n');
+      })
+      .join("\n");
 
     const prompt = `Answer the user's question using the retrieved context below.
                     USER QUESTION:
@@ -127,10 +150,17 @@ route.post("/chat-stream-data", async (req, res) => {
                     - Do not mention relevance scores.
                     - Do not mention the reranking process.
                     Now answer the user's question.`;
+    let responseData = "";
     const answer = await courtDiaryChatAgent.stream(prompt);
     for await (let chunk of answer.textStream) {
       res.write(chunk);
+      responseData += chunk;
     }
+    await ChatHistoryModel.insertOne({
+      chat_owner: new mongoose.Types.ObjectId(id),
+      chat_request: chat_data,
+      chat_response: responseData,
+    });
     return res.end();
   } catch (err) {
     logger.error({
@@ -139,9 +169,7 @@ route.post("/chat-stream-data", async (req, res) => {
       body: req.body,
       stack: err.stack,
     });
-    return res
-      .status(HttpStatus.ERROR)
-      .end("Something went wrong");
+    return res.status(HttpStatus.ERROR).end("Something went wrong");
   }
 });
 

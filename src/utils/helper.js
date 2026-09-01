@@ -1,9 +1,14 @@
 import os from "os";
 import crypto from "crypto";
 import pLimit from "p-limit";
+import mongoose from "mongoose";
 import formidable from "formidable";
 import { appConfig } from "../config/app.config.js";
 import { transport } from "../config/smtp.config.js";
+import { PlansMapperModel } from "../model/plan-mapper.model.js";
+import { PlansModel } from "../model/plans.model.js";
+import { PlansEnum } from "../enum/plans.js";
+import { DateTime } from "luxon";
 
 const cores = os.cpus().length;
 
@@ -44,10 +49,39 @@ export function genOtpToken() {
   return otp;
 }
 
-export function createFormidable(){
+export function createFormidable() {
   return formidable({
     maxFiles: 1,
     uploadDir: "static/",
     maxFileSize: 50 * 1024 * 1024,
   });
+}
+
+export async function getCurrentPlan(userId) {
+  try {
+    const currentDate = DateTime.now();
+    let currentActivePlans = await PlansMapperModel.findOne({
+      user_id: new mongoose.Types.ObjectId(userId ?? ""),
+      start_date: { $lte: currentDate },
+      end_date: { $gte: currentDate },
+    }).lean();
+    if (!currentActivePlans.length) {
+      const basicPlan = await PlansModel.findOne({
+        plan_name: PlansEnum.basic,
+      });
+      const expirydate = currentDate.plus({ days: 30 });
+      currentActivePlans = await PlansMapperModel.insertOne({
+        user_id: new mongoose.Types.ObjectId(userId),
+        plan_id: basicPlan._id,
+        start_date: currentDate.toJSDate(),
+        end_date: expirydate.toJSDate(),
+      });
+    }
+    const mappedoutPlan = await PlansModel.find({
+      _id: currentActivePlans._id,
+    });
+    return mappedoutPlan;
+  } catch (err) {
+    throw err;
+  }
 }

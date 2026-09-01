@@ -7,4 +7,7 @@ export const ModelName = Object.freeze({
   Particulars: "particulats",
   FileModel: "file",
   VectorTracker: "vector-tracker-mdoel",
+  ChatHistory: "chat-history",
+  PlansModel: "plans-model",
+  PlanMapper: "plan-mapper",
 });
