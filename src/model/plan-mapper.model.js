@@ -7,7 +7,7 @@ const PlanMapper = new mongoose.Schema(
       type: mongoose.Types.ObjectId,
       required: true,
     },
-    plan_id: {
+    plan_obj_id: {
       type: mongoose.Types.ObjectId,
       required: true,
     },

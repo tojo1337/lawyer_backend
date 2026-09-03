@@ -57,28 +57,32 @@ export function createFormidable() {
   });
 }
 
+// Need to check if this is catching the paid tier or free tier
 export async function getCurrentPlan(userId) {
   try {
     const currentDate = DateTime.now();
-    let currentActivePlans = await PlansMapperModel.findOne({
+    let currentPlanId = null;
+    let currentActivePlans = await PlansMapperModel.find({
       user_id: new mongoose.Types.ObjectId(userId ?? ""),
       start_date: { $lte: currentDate },
       end_date: { $gte: currentDate },
     }).lean();
+    currentPlan = currentActivePlans[0].plan_id ?? '';
     if (!currentActivePlans.length) {
       const basicPlan = await PlansModel.findOne({
         plan_name: PlansEnum.basic,
       });
       const expirydate = currentDate.plus({ days: 30 });
-      currentActivePlans = await PlansMapperModel.insertOne({
+      const responseData = await PlansMapperModel.insertOne({
         user_id: new mongoose.Types.ObjectId(userId),
         plan_id: basicPlan._id,
         start_date: currentDate.toJSDate(),
         end_date: expirydate.toJSDate(),
       });
+      currentPlanId = responseData._id;
     }
     const mappedoutPlan = await PlansModel.find({
-      _id: currentActivePlans._id,
+      _id: currentPlanId,
     });
     return mappedoutPlan;
   } catch (err) {

@@ -21,4 +21,6 @@ export const appConfig = Object.freeze({
   embedModel: process.env.EMBED_MODEL,
   maxChunkSize: process.env.MAX_CHUNK_SIZE,
   maxOverlaps: process.env.MAX_OVERLAPS,
+  razorpayId: process.env.RAZORPAY_ID,
+  razorpaySecrets: process.env.RAZORPAY_SECRET,
 });

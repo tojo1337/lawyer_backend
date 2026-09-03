@@ -8,6 +8,10 @@ const Plans = new mongoose.Schema(
       type: String,
       required: true,
     },
+    plan_id: {
+      type: String,
+      required: true,
+    },
     chats_per_day: {
       type: Number,
       required: true,

@@ -9,4 +9,5 @@ export const AgendaJobs = Object.freeze({
   completedJsonEmbeds: "completedJsonEmbeds",
   completedPdfEmbeds: "completedPdfEmbeds",
   completedDocEmbeds: "completedDocEmbeds",
+  paymentProcessing: "paymentProcessing",
 });

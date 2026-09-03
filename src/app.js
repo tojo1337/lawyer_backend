@@ -12,6 +12,7 @@ import { route as authRoute } from "./routes/auth.route.js";
 import { route as pingRoute } from "./routes/ping.route.js";
 import { route as casesRoute } from "./routes/cases.route.js";
 import { route as commonRoute } from "./routes/common.route.js";
+import { route as payemntRoute } from "./routes/payment.routes.js";
 import { route as caseFileRoute } from "./routes/case-file.route.js";
 import { route as chatStreamRoute } from "./routes/chat-stream.route.js";
 import { vectorCollectionCreator } from "./utils/vector-collection-creator.js";
@@ -34,6 +35,7 @@ async function main() {
     app.use("/common", commonRoute);
     app.use("/case-file", caseFileRoute);
     app.use("/chat", chatStreamRoute);
+    app.use("/payment", payemntRoute);
 
     server.listen(appConfig.port, () => {
       logger.info(`Server started at port : ${appConfig.port}`);
@@ -50,7 +52,6 @@ async function explicitShutdown(signal) {
     io.close();
     server.close();
     logger.error({ signal }, "Interrupted");
-    // await putUsersOffline();
   } catch (err) {
     logger.error(`Something went wrong : ${err.stack}`);
   } finally {

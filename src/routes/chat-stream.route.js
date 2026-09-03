@@ -69,7 +69,9 @@ route.post("/chat-stream-data", async (req, res) => {
     ]);
 
     if (currentPlan.chat_per_day < recordedChats.length + 1)
-      return res.end("chat limit reached for current date");
+      return res
+        .status(HttpStatus.ERROR)
+        .json({ message: "Chat limit reached" });
 
     // These are required for streaming
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
