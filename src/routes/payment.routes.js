@@ -5,14 +5,17 @@ import { gateway } from "../config/razorpay.config.js";
 import { PlansModel } from "../model/plans.model.js";
 import { appConfig } from "../config/app.config.js";
 import { validateWebhookSignature } from "razorpay";
+import { agenda } from "../config/agenda.config.js";
+import { AgendaJobs } from "../enum/agenda-jobs.js";
+import { PlansMapperModel } from "../model/plan-mapper.model.js";
 
 const route = Router();
 const paymentGateway = gateway;
 
 route.get("/get-all-produces", async (req, res) => {
   try {
-    // Think of a way to fetch all products
-    return res.status(HttpStatus.OK).json({ data: [] });
+    const productData = await PlansModel.find({}).lean();
+    return res.status(HttpStatus.OK).json({ data: productData || [] });
   } catch (err) {
     logger.error({
       url: req.originalUrl,
@@ -33,7 +36,7 @@ route.post("/razorpay-webhook", async (req, res) => {
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "Something went wrong" });
-    // Add background processing of the subscription
+    await agenda.now(AgendaJobs.paymentProcessing, { event, payload });
     return res
       .status(HttpStatus.OK)
       .json({ message: "Processed with success" });
@@ -52,7 +55,12 @@ route.post("/razorpay-webhook", async (req, res) => {
 
 route.post("/create-checkout-session", async (req, res) => {
   try {
+    const { id } = req.userData || {};
     const { plan_id = "" } = req.body || {};
+    if (!id)
+      return res
+        .status(HttpStatus.ERROR)
+        .json({ message: "User not authorized.1" });
     if (!plan_id)
       return res
         .status(HttpStatus.ERROR)
@@ -68,8 +76,13 @@ route.post("/create-checkout-session", async (req, res) => {
       quantity: 1,
       customer_notify: true,
     };
-    const subscription =
-      await paymentGateway.subscription.create(checkoutPayload);
+    const { id: sub_id = "", plan_id: planId = "" } =
+      (await paymentGateway.subscription.create(checkoutPayload)) || {};
+    await PlansMapperModel.insertOne({
+      user_id: id,
+      subscription_id: sub_id,
+      plan_id: planId,
+    });
     return res.status(HttpStatus.OK).json({
       subscription_id: subscription.id,
       key: appConfig.razorpayId,

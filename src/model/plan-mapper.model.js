@@ -7,17 +7,19 @@ const PlanMapper = new mongoose.Schema(
       type: mongoose.Types.ObjectId,
       required: true,
     },
-    plan_obj_id: {
-      type: mongoose.Types.ObjectId,
+    subscription_id: {
+      type: String,
+      required: true,
+    },
+    plan_id: {
+      type: String,
       required: true,
     },
     start_date: {
       type: Date,
-      required: true,
     },
     end_date: {
       type: Date,
-      required: true,
     },
   },
   {
