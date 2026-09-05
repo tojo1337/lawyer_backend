@@ -4,10 +4,10 @@ import { HttpStatus } from "../enum/http-status.js";
 import { gateway } from "../config/razorpay.config.js";
 import { PlansModel } from "../model/plans.model.js";
 import { appConfig } from "../config/app.config.js";
-// import { validateWebhookSignature } from "razorpay";
 import { agenda } from "../config/agenda.config.js";
 import { AgendaJobs } from "../enum/agenda-jobs.js";
 import { PlansMapperModel } from "../model/plan-mapper.model.js";
+import { validateWebhookSignature } from "razorpay/dist/utils/razorpay-utils.js";
 
 const route = Router();
 const paymentGateway = gateway;
@@ -31,15 +31,24 @@ route.get("/get-all-produces", async (req, res) => {
 
 route.post("/razorpay-webhook", async (req, res) => {
   try {
-    const { event = "", payload } = req.body || {};
-    if (!event || !payload)
+    const reqBody = req.body;
+    const webhookSign = req.header["x-razorpay-signature"] || "";
+    const validateResponse = validateWebhookSignature(
+      JSON.stringify(reqBody),
+      webhookSign,
+      appConfig.razorpaySecrets,
+    );
+    if (validateResponse) {
+      const { event, payload } = reqBody || {};
+      await agenda.now(AgendaJobs.paymentProcessing, { event, payload });
+      return res
+        .status(HttpStatus.OK)
+        .json({ message: "Processed with success" });
+    } else {
       return res
         .status(HttpStatus.ERROR)
-        .json({ message: "Something went wrong" });
-    await agenda.now(AgendaJobs.paymentProcessing, { event, payload });
-    return res
-      .status(HttpStatus.OK)
-      .json({ message: "Processed with success" });
+        .json({ message: "Invalid signature" });
+    }
   } catch (err) {
     logger.error({
       url: req.originalUrl,

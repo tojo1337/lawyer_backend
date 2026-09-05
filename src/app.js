@@ -1,8 +1,11 @@
 import "dotenv/config";
 import cors from "cors";
 import "./jobs/index.jobs.js";
+import passport from "passport";
+import "./config/passport.config.js";
 import { createServer } from "http";
 import express, { json } from "express";
+import { EventTypes } from "./enum/events.js";
 import dbConnector from "./db/db.connector.js";
 import { logger } from "./config/pino.config.js";
 import { appConfig } from "./config/app.config.js";
@@ -16,7 +19,6 @@ import { route as payemntRoute } from "./routes/payment.routes.js";
 import { route as caseFileRoute } from "./routes/case-file.route.js";
 import { route as chatStreamRoute } from "./routes/chat-stream.route.js";
 import { vectorCollectionCreator } from "./utils/vector-collection-creator.js";
-import { EventTypes } from "./enum/events.js";
 
 const app = express();
 const server = createServer(app);
@@ -29,6 +31,7 @@ async function main() {
     await agenda.start();
     await vectorCollectionCreator();
 
+    app.use(passport.initialize());
     app.use("/test", pingRoute);
     app.use("/auth", authRoute);
     app.use("/cases", casesRoute);
