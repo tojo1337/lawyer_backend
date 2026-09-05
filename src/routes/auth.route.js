@@ -14,6 +14,7 @@ import { AgendaJobs } from "../enum/agenda-jobs.js";
 import otpTokeniddleware from "../middleware/otp-token.middleware.js";
 import { TokenModel } from "../model/token.model.js";
 import mongoose from "mongoose";
+import passport from "passport";
 
 const route = Router();
 const bcryptRounds = 5;
@@ -259,5 +260,30 @@ route.get("/google-auth", async (req, res) => {
       .json({ message: "Something went wrong" });
   }
 });
+
+route.get(
+  "/google-passport",
+  passport.authenticate("google", { scope: ["profile"] }),
+);
+route.get(
+  "/google/callback",
+  passport.authenticate("google", { failureRedirect: "/login" }),
+  async (req, res) => {
+    return res
+      .status(HttpStatus.OK)
+      .json({ message: "Authorized with success" });
+  },
+);
+
+route.get("/facebook-passport", passport.authenticate("facebook"));
+route.get(
+  "/facebook/callback",
+  passport.authenticate("facebook", { failureRedirect: "/login" }),
+  async (req, res) => {
+    return res
+      .status(HttpStatus.OK)
+      .json({ message: "Authorized with success" });
+  },
+);
 
 export { route };

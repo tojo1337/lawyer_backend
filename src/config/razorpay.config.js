@@ -1,5 +1,5 @@
 import Razorpay from "razorpay";
-import { appConfig } from "./app.config";
+import { appConfig } from "./app.config.js";
 
 // Singleton class pattern
 class RazorpayInstance {

@@ -7,7 +7,7 @@ const UserSchema = new mongoose.Schema(
     user_id: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
     },
     name: {
       type: String,
@@ -17,6 +17,9 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    password: {
+      type: String,
+    },
     is_active: {
       type: Boolean,
       default: true,
@@ -24,7 +27,7 @@ const UserSchema = new mongoose.Schema(
     is_online: {
       type: Boolean,
       default: false,
-    }
+    },
   },
   {
     versionKey: false,

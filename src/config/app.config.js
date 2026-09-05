@@ -11,6 +11,8 @@ export const appConfig = Object.freeze({
   smtpSender: process.env.SMTP_SENDER,
   googleClientId: process.env.GOOGLE_CLIENT_ID,
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  fbClientId: process.env.FB_CLIENT_ID,
+  fbClientSecret: process.env.FB_CLIENT_SECRET,
   vectorDbUrl: process.env.VECTOR_DB_URL,
   jwksUri: process.env.JWKS_URI,
   semanticValue: process.env.SEMANTIC_VALUE,
@@ -23,4 +25,5 @@ export const appConfig = Object.freeze({
   maxOverlaps: process.env.MAX_OVERLAPS,
   razorpayId: process.env.RAZORPAY_ID,
   razorpaySecrets: process.env.RAZORPAY_SECRET,
+  jwtSecret: process.env.JWT_SECRET,
 });
