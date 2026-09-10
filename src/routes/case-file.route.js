@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { Router } from "express";
 import { logger } from "../config/pino.config.js";
 import { HttpStatus } from "../enum/http-status.js";
-import jwtMiddleware from "../middleware/jwt.middleware.js";
+import { jwtMiddleware } from "../middleware/jwt.middleware.js";
 import { FileModel } from "../model/file.model.js";
 import * as helper from "../utils/helper.js";
 import * as common from "../utils/commons.js";

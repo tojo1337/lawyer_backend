@@ -3,7 +3,7 @@ import { Router } from "express";
 import { logger } from "../config/pino.config.js";
 import { HttpStatus } from "../enum/http-status.js";
 import { CaseModel } from "../model/case.model.js";
-import jwtMiddleware from "../middleware/jwt.middleware.js";
+import { jwtMiddleware } from "../middleware/jwt.middleware.js";
 import * as caseSchema from "../schema/cases.schema.js";
 import * as helper from "../utils/helper.js";
 import { CourtNameModel } from "../model/court-name.model.js";

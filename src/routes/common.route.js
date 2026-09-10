@@ -4,7 +4,7 @@ import { HttpStatus } from "../enum/http-status.js";
 import { CourtNameModel } from "../model/court-name.model.js";
 import { ParticularsModel } from "../model/particulars.model.js";
 import { CurrentStageModel } from "../model/current-stage.mdoel.js";
-import jwtMiddleware from "../middleware/jwt.middleware.js";
+import { jwtMiddleware } from "../middleware/jwt.middleware.js";
 
 // Add the document adding logic in here
 const route = Router();

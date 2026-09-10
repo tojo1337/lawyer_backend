@@ -1,91 +1,60 @@
-import crypto from "crypto";
-import mongoose from "mongoose";
-import { JwksClient } from "jwks-rsa";
-import jwt, { decode } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
+import passport from "passport";
+import { logger } from "../config/pino.config.js";
 import { UserModel } from "../model/user.model.js";
 import { appConfig } from "../config/app.config.js";
-import { HttpStatus } from "../enum/http-status.js";
-import { appConfig as common } from "../config/app.config.js";
 
-// Client config
-const client = new JwksClient({
-  jwksUri: appConfig.jwksUri,
-  cache: true,
-  cacheMaxEntries: 5,
-  cacheMaxAge: 600_000,
-  timeout: 30_000,
-});
-
-// This will generate the key from authentik jwks
-export function getKey(header, callback) {
-  return client.getSigningKey(header.kid, function (err, key) {
+export function jwtMiddleware(req, res, next) {
+  passport.authenticate("bearer", { session: false }, (err, user, info) => {
     if (err) {
-      return callback(err);
+      return next(err);
     }
-    const publicKey = key.getPublicKey
-      ? key.getPublicKey()
-      : key.rsaPublicKey || key.publicKey;
-    callback(null, publicKey);
-  });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: info?.message ?? "Unauthorized",
+      });
+    }
+
+    req.email = user.email;
+    next();
+  })(req, res, next);
 }
 
-// Creating user in here
-export async function createOTFUser(tokenObj) {
+export async function refreshMiddleware(req, res, next) {
   try {
-    let userUniqueId = "";
-    const userSignature = `${tokenObj.iss}_${tokenObj.sub}`;
-    const hashedUserId = crypto
-      .createHash("md5")
-      .update(userSignature)
-      .digest("hex");
-    const userObjPayload = {
-      user_id: hashedUserId,
-      name: tokenObj?.nickname,
-      email: tokenObj?.email,
-      is_active: true,
-      is_online: false,
-    };
-    const existingUser = await UserModel.findOne({
-      user_id: hashedUserId,
-    }).lean();
-    if (!existingUser) {
-      const newUser = await UserModel.insertOne({ ...userObjPayload });
-      userUniqueId = newUser._id.toString();
-    } else if (existingUser) {
-      userUniqueId = existingUser._id.toString();
-    }
-    return userUniqueId;
-  } catch (err) {
-    throw err;
-  }
-}
-
-// Add the async decoder code in here
-export async function deocdeToken(token) {
-  return new Promise((resolve, reject) => {
-    jwt.verify(token, getKey, { algorithms: ["RS256"] }, (err, decoded) => {
-      if (err) {
-        return reject(err);
+    const secret = appConfig.jwtSecret ?? "";
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer")) {
+      const token = authHeader.split(" ")[1] ?? "";
+      const decodedValue = jwt.verify(token, secret, {
+        ignoreExpiration: true,
+      });
+      const { email } = decodedValue;
+      const userData = await UserModel.find({ email });
+      if (userData.length) {
+        req.email = email;
+        return next();
+      } else {
+        return res
+          .status(HttpStatus.UN_AUTHORIZED)
+          .json({ message: "Invalid token" });
       }
-      return resolve(decoded);
-    });
-  });
-}
-
-// Check if it works
-export default async function jwtMiddleware(req, res, next) {
-  try {
-    const token = req.headers.authorization?.split("Bearer ")[1] || "";
-    const decodedTokenObj = await deocdeToken(token);
-    const userId = await createOTFUser(decodedTokenObj);
-    const payload = {
-      id: userId || "",
-    };
-    req.userData = payload;
-    return next();
+    } else {
+      return res
+        .status(HttpStatus.UN_AUTHORIZED)
+        .json({ message: "Invalid token" });
+    }
   } catch (err) {
+    logger.error({
+      url: req.originalUrl,
+      method: req.method,
+      body: req.body,
+      stack: err.stack,
+    });
     return res
-      .status(HttpStatus.UN_AUTHORIZED)
-      .json({ message: "Unauthorized" });
+      .status(HttpStatus.ERROR)
+      .json({ message: "Something went wrong" });
   }
 }

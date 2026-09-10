@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { logger } from "../config/pino.config.js";
 import { HttpStatus } from "../enum/http-status.js";
-import jwtMiddleware from "../middleware/jwt.middleware.js";
+import { jwtMiddleware } from "../middleware/jwt.middleware.js";
 
 const route = Router();
 

@@ -17,7 +17,7 @@ import {
   createAnswerRelevancyScorer,
   createBiasScorer,
 } from "@mastra/evals/scorers/prebuilt";
-import jwtMiddleware from "../middleware/jwt.middleware.js";
+import { jwtMiddleware } from "../middleware/jwt.middleware.js";
 import { ChatHistoryModel } from "../model/chat-history.model.js";
 import mongoose from "mongoose";
 import * as helper from "../utils/helper.js";

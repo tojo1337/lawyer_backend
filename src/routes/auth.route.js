@@ -7,7 +7,6 @@ import { UserModel } from "../model/user.model.js";
 import * as helper from "../utils/helper.js";
 import * as common from "../utils/commons.js";
 import { appConfig } from "../config/app.config.js";
-import { googleConf as googleClient } from "../config/google-client.config.js";
 import { AuthType } from "../enum/auth-type.js";
 import { agenda } from "../config/agenda.config.js";
 import { AgendaJobs } from "../enum/agenda-jobs.js";
@@ -15,37 +14,40 @@ import otpTokeniddleware from "../middleware/otp-token.middleware.js";
 import { TokenModel } from "../model/token.model.js";
 import mongoose from "mongoose";
 import passport from "passport";
+import { refreshMiddleware } from "../middleware/jwt.middleware.js";
 
 const route = Router();
 const bcryptRounds = 5;
+const cookieOptions = {
+  httpOnly: true,
+  maxAge: 1000 * 60 * 15,
+  path: "/",
+  secure: true,
+};
 
-// Register the user using email
-route.post("/email-auth-register", async (req, res) => {
+route.post("/register", async (req, res) => {
   try {
-    const { name, email, password } = req.body || {};
-    if (
-      !name ||
-      !email ||
-      !password ||
-      name === "" ||
-      email === "" ||
-      password === ""
-    )
+    const { name, email, password } = req.body ?? {};
+    if (!name || !email || !password)
       return res
         .status(HttpStatus.ERROR)
-        .json({ message: "Not all fields were provided" });
-    const userEtnry = await common.findUserByEmail(email);
-    if (userEtnry.length)
+        .json({ message: "Not all the required fields are provided" });
+    const userEntry = await UserModel.find({ email }).lean();
+    if (userEntry.length)
       return res
-        .status(HttpStatus.ERROR)
-        .json({ message: "User already exists with teh given email id" });
-    const newUuid = helper.genUuid();
-    const salt = await bcrypt.genSalt(bcryptRounds);
-    const hashedPass = await bcrypt.hash(password, salt);
-    await UserModel.insertOne({ name, email, password: hashedPass });
+        .status(HttpStatus.OK)
+        .json({ message: "User with the same email already exists" });
+    const bcryptPass = await bcrypt.hash(password, saltCounts);
+    const randomId = helper.randomIdGen().toString();
+    await UserModel.insertOne({
+      name,
+      email,
+      password: bcryptPass,
+      oidc_id: randomId,
+    });
     return res
       .status(HttpStatus.OK)
-      .json({ message: "User registered with success" });
+      .json({ message: "User created with success" });
   } catch (err) {
     logger.error({
       url: req.originalUrl,
@@ -59,79 +61,34 @@ route.post("/email-auth-register", async (req, res) => {
   }
 });
 
-// email login
-// Need to make sure so that only one otp will be send till the otp is not expired
-route.post("/email-auth-login", async (req, res) => {
+route.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body || {};
-    if (!email || !password || email === "" || password === "")
+    if (!email || !password)
       return res
         .status(HttpStatus.ERROR)
-        .json({ message: "Not all fields were provided" });
-    const userArr = await common.findUserByEmail(email);
-    if (!userArr.length)
-      return res.status(HttpStatus.ERROR).json({ message: "No user found" });
-    const hashedPass = userArr[0].password || "";
-    const result = await bcrypt.compare(password, hashedPass);
-    if (!result)
-      return res
-        .status(HttpStatus.ERROR)
-        .json({ message: "Wrong email id or password" });
-    let promiseArr = [];
-    const otpId = helper.genUuid();
-    const otpToken = helper.genOtpToken();
-    const tokenEntry = await TokenModel.insertOne({
-      uuid: otpId,
-      otp: otpToken
-    });
-    const payload ={
-      tokenId: otpId
-    };
-    promiseArr.push(
-      agenda.now(AgendaJobs.otpService, {
-        to: email,
-        tokenId: tokenEntry._id.toString(),
-        otpToken
-      }),
-    );
-    promiseArr.push(
-      jsonwebtoken.sign(payload, appConfig.otpSecret, {
-        expiresIn: "10m",
-        algorithm: "HS512",
-      }),
-    );
-    const [_, token] = await helper.promiseCaller(promiseArr);
-    return res.status(HttpStatus.OK).json({ token });
-  } catch (err) {
-    logger.error({
-      url: req.originalUrl,
-      method: req.method,
-      body: req.body,
-      stack: err.stack,
-    });
-    return res
-      .status(HttpStatus.ERROR)
-      .json({ message: "Something went wrong" });
-  }
-});
-
-// Verify the user and provide the original jwt token
-route.post("/email-otp-verify", otpTokeniddleware, async (req, res) => {
-  try {
-    const { otp } = req.body || {};
-    const userData = req.userData || null;
+        .json({ message: "No email or password provided" });
+    const userData = await UserModel.findOne({ email }).lean();
     if (!userData)
       return res
         .status(HttpStatus.ERROR)
-        .json({ message: "Email OTP not verified" });
-    const payload = {
-      id: userData._id.toString(),
+        .json({ message: "User not registered" });
+    const hashedPass = userData?.password ?? "";
+    const compare = await bcrypt.compare(password, hashedPass);
+    if (!compare)
+      return res
+        .status(HttpStatus.UN_AUTHORIZED)
+        .json({ message: "UnAuthorized" });
+    const payload = { email: userData.email };
+    const options = {
+      expiresIn: "15m",
+      algorithm: "HS256",
     };
-    const token = await jsonwebtoken.sign(payload, appConfig.jwtSecret, {
-      expiresIn: "1d",
-      algorithm: "HS512",
-    });
-    return res.status(HttpStatus.OK).json({ token });
+    const token = jwt.sign(payload, appConfig.jwtSecret, options);
+    res.cookie("token", token, cookieOptions);
+    return res
+      .status(HttpStatus.OK)
+      .json({ message: "Logging in with success" });
   } catch (err) {
     logger.error({
       url: req.originalUrl,
@@ -145,70 +102,44 @@ route.post("/email-otp-verify", otpTokeniddleware, async (req, res) => {
   }
 });
 
-// Refresh token api
-route.get("/auth-refresh", async (req, res) => {
-  const token = req.headers.authorization?.split("Bearer ")[1] || "";
-  try {
-    const result = jsonwebtoken.verify(token, appConfig.jwtSecret);
-    if (!result) {
-      return res
-        .status(HttpStatus.UN_AUTHORIZED)
-        .json({ message: "UnAuthorized" });
-    }
-    const { id } = result;
-    const user = await UserModel.findOne({
-      _id: new mongoose.Types.ObjectId(id),
-    }).lean();
-    if (user) {
-      const payload = { id: user._id.toString() };
-      const refresh = jsonwebtoken.sign(payload, appConfig.jwtSecret, {
-        expiresIn: "1d",
-        algorithm: "HS512",
-      });
-      return res.status(HttpStatus.OK).json({ token: refresh });
-    } else {
-      return res
-        .status(HttpStatus.UN_AUTHORIZED)
-        .json({ message: "UnAuthorized" });
-    }
-  } catch (err) {
-    if (err instanceof jsonwebtoken.TokenExpiredError) {
-      const result = jsonwebtoken.verify(token, appConfig.jwtSecret, {
-        ignoreExpiration: true,
-      });
-      if (!result) {
+route.get(
+  "/refresh",
+  refreshMiddleware,
+  async (req, res) => {
+    try {
+      const { email } = req;
+      if (!email)
         return res
           .status(HttpStatus.UN_AUTHORIZED)
-          .json({ message: "UnAuthorized" });
-      }
-      const { id } = result;
-      const user = await UserModel.findOne({
-        _id: new mongoose.Types.ObjectId(id),
-      }).lean();
-      if (user) {
-        const payload = { id: user._id.toString() };
-        const refresh = jsonwebtoken.sign(payload, appConfig.jwtSecret, {
-          expiresIn: "1d",
-          algorithm: "HS512",
-        });
-        return res.status(HttpStatus.OK).json({ token: refresh });
-      } else {
+          .json({ message: "Invalid refresh token" });
+      const userData = await UserModel.findOne({ email }).lean();
+      if (!userData)
         return res
           .status(HttpStatus.UN_AUTHORIZED)
-          .json({ message: "UnAuthorized" });
-      }
+          .json({ message: "Invalid refresh token" });
+      const payload = { email: userData.email };
+      const options = {
+        expiresIn: "15m",
+        algorithm: "HS256",
+      };
+      const token = jwt.sign(payload, appConfig.jwtSecret, options);
+      res.cookie("token", token, cookieOptions);
+      return res
+        .status(HttpStatus.OK)
+        .json({ message: "Refresh token sent with success" });
+    } catch (err) {
+      logger.error({
+        url: req.originalUrl,
+        method: req.method,
+        body: req.body,
+        stack: err.stack,
+      });
+      return res
+        .status(HttpStatus.ERROR)
+        .json({ message: "Something went wrong" });
     }
-    logger.error({
-      url: req.originalUrl,
-      method: req.method,
-      body: req.body,
-      stack: err.stack,
-    });
-    return res
-      .status(HttpStatus.REQUEST_ERROR)
-      .json({ error: `Error occurred : ${err}` });
-  }
-});
+  },
+);
 
 // Google authenticaiton
 route.get("/google-auth", async (req, res) => {
@@ -263,26 +194,73 @@ route.get("/google-auth", async (req, res) => {
 
 route.get(
   "/google-passport",
-  passport.authenticate("google", { scope: ["profile"] }),
+  passport.authenticate("google", { scope: ["profile", "email"] }),
 );
 route.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/login" }),
   async (req, res) => {
-    return res
-      .status(HttpStatus.OK)
-      .json({ message: "Authorized with success" });
+    try {
+      const { email } = req ?? {};
+      if (!email)
+        return res
+          .status(HttpStatus.UN_AUTHORIZED)
+          .json({ message: "Malformed profile body from google" });
+      const payload = { email };
+      const options = {
+        expiresIn: "15m",
+        algorithm: "HS256",
+      };
+      const token = jwt.sign(payload, appConfig.jwtSecret, options);
+      res.cookie("token", token, cookieOptions);
+      return res.redirect(appConfig.redirectUrl);
+    } catch (err) {
+      logger.error({
+        url: req.originalUrl,
+        method: req.method,
+        body: req.body,
+        stack: err.stack,
+      });
+      return res
+        .status(HttpStatus.ERROR)
+        .json({ message: "Something went wrong" });
+    }
   },
 );
 
-route.get("/facebook-passport", passport.authenticate("facebook"));
+route.get(
+  "/facebook-passport",
+  passport.authenticate("facebook", { scope: ["profile", "email"] }),
+);
 route.get(
   "/facebook/callback",
   passport.authenticate("facebook", { failureRedirect: "/login" }),
   async (req, res) => {
-    return res
-      .status(HttpStatus.OK)
-      .json({ message: "Authorized with success" });
+    try {
+      const { email } = req ?? {};
+      if (!email)
+        return res
+          .status(HttpStatus.UN_AUTHORIZED)
+          .json({ message: "Malformed profile body from google" });
+      const payload = { email };
+      const options = {
+        expiresIn: "15m",
+        algorithm: "HS256",
+      };
+      const token = jwt.sign(payload, appConfig.jwtSecret, options);
+      res.cookie("token", token, cookieOptions);
+      return res.redirect(appConfig.redirectUrl);
+    } catch (err) {
+      logger.error({
+        url: req.originalUrl,
+        method: req.method,
+        body: req.body,
+        stack: err.stack,
+      });
+      return res
+        .status(HttpStatus.ERROR)
+        .json({ message: "Something went wrong" });
+    }
   },
 );
 
