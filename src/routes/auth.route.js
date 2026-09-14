@@ -1,4 +1,7 @@
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
+import passport from "passport";
 import { Router } from "express";
 import jsonwebtoken from "jsonwebtoken";
 import { logger } from "../config/pino.config.js";
@@ -10,10 +13,8 @@ import { appConfig } from "../config/app.config.js";
 import { AuthType } from "../enum/auth-type.js";
 import { agenda } from "../config/agenda.config.js";
 import { AgendaJobs } from "../enum/agenda-jobs.js";
-import otpTokeniddleware from "../middleware/otp-token.middleware.js";
 import { TokenModel } from "../model/token.model.js";
-import mongoose from "mongoose";
-import passport from "passport";
+import otpTokeniddleware from "../middleware/otp-token.middleware.js";
 import { refreshMiddleware } from "../middleware/jwt.middleware.js";
 
 const route = Router();
@@ -37,13 +38,13 @@ route.post("/register", async (req, res) => {
       return res
         .status(HttpStatus.OK)
         .json({ message: "User with the same email already exists" });
-    const bcryptPass = await bcrypt.hash(password, saltCounts);
+    const bcryptPass = await bcrypt.hash(password, bcryptRounds);
     const randomId = helper.randomIdGen().toString();
     await UserModel.insertOne({
       name,
       email,
       password: bcryptPass,
-      oidc_id: randomId,
+      user_id: randomId,
     });
     return res
       .status(HttpStatus.OK)
@@ -102,44 +103,40 @@ route.post("/login", async (req, res) => {
   }
 });
 
-route.get(
-  "/refresh",
-  refreshMiddleware,
-  async (req, res) => {
-    try {
-      const { email } = req;
-      if (!email)
-        return res
-          .status(HttpStatus.UN_AUTHORIZED)
-          .json({ message: "Invalid refresh token" });
-      const userData = await UserModel.findOne({ email }).lean();
-      if (!userData)
-        return res
-          .status(HttpStatus.UN_AUTHORIZED)
-          .json({ message: "Invalid refresh token" });
-      const payload = { email: userData.email };
-      const options = {
-        expiresIn: "15m",
-        algorithm: "HS256",
-      };
-      const token = jwt.sign(payload, appConfig.jwtSecret, options);
-      res.cookie("token", token, cookieOptions);
+route.get("/refresh", refreshMiddleware, async (req, res) => {
+  try {
+    const { email } = req;
+    if (!email)
       return res
-        .status(HttpStatus.OK)
-        .json({ message: "Refresh token sent with success" });
-    } catch (err) {
-      logger.error({
-        url: req.originalUrl,
-        method: req.method,
-        body: req.body,
-        stack: err.stack,
-      });
+        .status(HttpStatus.UN_AUTHORIZED)
+        .json({ message: "Invalid refresh token" });
+    const userData = await UserModel.findOne({ email }).lean();
+    if (!userData)
       return res
-        .status(HttpStatus.ERROR)
-        .json({ message: "Something went wrong" });
-    }
-  },
-);
+        .status(HttpStatus.UN_AUTHORIZED)
+        .json({ message: "Invalid refresh token" });
+    const payload = { email: userData.email };
+    const options = {
+      expiresIn: "15m",
+      algorithm: "HS256",
+    };
+    const token = jwt.sign(payload, appConfig.jwtSecret, options);
+    res.cookie("token", token, cookieOptions);
+    return res
+      .status(HttpStatus.OK)
+      .json({ message: "Refresh token sent with success" });
+  } catch (err) {
+    logger.error({
+      url: req.originalUrl,
+      method: req.method,
+      body: req.body,
+      stack: err.stack,
+    });
+    return res
+      .status(HttpStatus.ERROR)
+      .json({ message: "Something went wrong" });
+  }
+});
 
 // Google authenticaiton
 route.get("/google-auth", async (req, res) => {

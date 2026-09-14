@@ -3,6 +3,7 @@ import passport from "passport";
 import { logger } from "../config/pino.config.js";
 import { UserModel } from "../model/user.model.js";
 import { appConfig } from "../config/app.config.js";
+import { HttpStatus } from "../enum/http-status.js";
 
 export function jwtMiddleware(req, res, next) {
   passport.authenticate("bearer", { session: false }, (err, user, info) => {

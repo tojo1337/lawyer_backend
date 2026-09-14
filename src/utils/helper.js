@@ -89,3 +89,7 @@ export async function getCurrentPlan(userId) {
     throw err;
   }
 }
+
+export function randomIdGen(){
+  return crypto.randomUUID();
+}
