@@ -4,6 +4,7 @@ import { logger } from "../config/pino.config.js";
 import { UserModel } from "../model/user.model.js";
 import { appConfig } from "../config/app.config.js";
 import { HttpStatus } from "../enum/http-status.js";
+import mongoose from "mongoose";
 
 export function jwtMiddleware(req, res, next) {
   passport.authenticate("bearer", { session: false }, (err, user, info) => {
@@ -18,7 +19,10 @@ export function jwtMiddleware(req, res, next) {
       });
     }
 
-    req.email = user.email;
+    req.userData = {
+      id: user._id.toString(),
+      email: user.email
+    };
     next();
   })(req, res, next);
 }
@@ -32,10 +36,15 @@ export async function refreshMiddleware(req, res, next) {
       const decodedValue = jwt.verify(token, secret, {
         ignoreExpiration: true,
       });
-      const { email } = decodedValue;
-      const userData = await UserModel.find({ email });
+      const { id } = decodedValue;
+      const userData = await UserModel.find({
+        _id: new mongoose.Types.ObjectId(id),
+      });
       if (userData.length) {
-        req.email = email;
+        req.userData = {
+          id: userData[0]._id.toString(),
+          email: userData[0].email,
+        };
         return next();
       } else {
         return res

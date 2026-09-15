@@ -80,7 +80,7 @@ route.post("/login", async (req, res) => {
       return res
         .status(HttpStatus.UN_AUTHORIZED)
         .json({ message: "UnAuthorized" });
-    const payload = { email: userData.email };
+    const payload = { id: userData._id.toString() };
     const options = {
       expiresIn: "15m",
       algorithm: "HS256",
@@ -105,17 +105,19 @@ route.post("/login", async (req, res) => {
 
 route.get("/refresh", refreshMiddleware, async (req, res) => {
   try {
-    const { email } = req;
-    if (!email)
+    const { id = '' } = req.userData || {};
+    if (!id)
       return res
         .status(HttpStatus.UN_AUTHORIZED)
         .json({ message: "Invalid refresh token" });
-    const userData = await UserModel.findOne({ email }).lean();
+    const userData = await UserModel.findOne({
+      _id: new mongoose.Types.ObjectId(id),
+    }).lean();
     if (!userData)
       return res
         .status(HttpStatus.UN_AUTHORIZED)
         .json({ message: "Invalid refresh token" });
-    const payload = { email: userData.email };
+    const payload = { id: userData._id.toString() };
     const options = {
       expiresIn: "15m",
       algorithm: "HS256",
