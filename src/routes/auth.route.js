@@ -140,57 +140,6 @@ route.get("/refresh", refreshMiddleware, async (req, res) => {
   }
 });
 
-// Google authenticaiton
-route.get("/google-auth", async (req, res) => {
-  try {
-    const token = req.headers.authorization?.split("Bearer ")[1] || "";
-    if (!token)
-      return res
-        .status(HttpStatus.ERROR)
-        .json({ message: "no id token found" });
-    const ticket = await googleClient.verifyIdToken({
-      idToken: token,
-      audience: appConfig.googleClientId,
-    });
-    const { name, email, sub } = ticket.getPayload();
-    const foundUser = await common.findUserByEmail(email);
-    if (foundUser.length) {
-      const payload = {
-        id: foundUser[0]._id.toString(),
-      };
-      const jwtToken = await jsonwebtoken.sign(payload, appConfig.jwtSecret, {
-        expiresIn: "1d",
-        algorithm: "HS512",
-      });
-      return res.status(HttpStatus.OK).json({ token: jwtToken });
-    }
-    const resp = await UserModel.insertOne({
-      name,
-      email,
-      sub_id: sub,
-      auth_type: AuthType.google_login,
-    });
-    const payload = {
-      id: resp._id.toString(),
-    };
-    const jwtToken = await jsonwebtoken.sign(payload, appConfig.jwtSecret, {
-      expiresIn: "1d",
-      algorithm: "HS512",
-    });
-    return res.status(HttpStatus.OK).json({ token: jwtToken });
-  } catch (err) {
-    logger.error({
-      url: req.originalUrl,
-      method: req.method,
-      body: req.body,
-      stack: err.stack,
-    });
-    return res
-      .status(HttpStatus.ERROR)
-      .json({ message: "Something went wrong" });
-  }
-});
-
 route.get(
   "/google-passport",
   passport.authenticate("google", { scope: ["profile", "email"] }),
