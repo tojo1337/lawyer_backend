@@ -27,6 +27,62 @@ export function jwtMiddleware(req, res, next) {
   })(req, res, next);
 }
 
+export function googleMiddleware(req, res, next) {
+  passport.authenticate(
+    "google",
+    {
+      failureRedirect: "/auth/auth-failure",
+      session: false,
+    },
+    (err, user, info) => {
+      if (err) {
+        return next(err);
+      }
+
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: info?.message ?? "Unauthorized",
+        });
+      }
+
+      req.userData = {
+        id: user._id.toString(),
+        email: user.email,
+      };
+      next();
+    },
+  )(req, res, next);
+}
+
+export function facebookMiddleware(req, res, next) {
+  passport.authenticate(
+    "facebook",
+    {
+      failureRedirect: "/auth/auth-failure",
+      session: false,
+    },
+    (err, user, info) => {
+      if (err) {
+        return next(err);
+      }
+
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: info?.message ?? "Unauthorized",
+        });
+      }
+
+      req.userData = {
+        id: user._id.toString(),
+        email: user.email,
+      };
+      next();
+    },
+  )(req, res, next);
+}
+
 export async function refreshMiddleware(req, res, next) {
   try {
     const secret = appConfig.jwtSecret ?? "";

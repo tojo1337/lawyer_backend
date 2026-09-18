@@ -15,7 +15,11 @@ import { agenda } from "../config/agenda.config.js";
 import { AgendaJobs } from "../enum/agenda-jobs.js";
 import { TokenModel } from "../model/token.model.js";
 import otpTokeniddleware from "../middleware/otp-token.middleware.js";
-import { refreshMiddleware } from "../middleware/jwt.middleware.js";
+import {
+  facebookMiddleware,
+  googleMiddleware,
+  refreshMiddleware,
+} from "../middleware/jwt.middleware.js";
 
 const route = Router();
 const bcryptRounds = 5;
@@ -105,7 +109,7 @@ route.post("/login", async (req, res) => {
 
 route.get("/refresh", refreshMiddleware, async (req, res) => {
   try {
-    const { id = '' } = req.userData || {};
+    const { id = "" } = req.userData || {};
     if (!id)
       return res
         .status(HttpStatus.UN_AUTHORIZED)
@@ -140,76 +144,74 @@ route.get("/refresh", refreshMiddleware, async (req, res) => {
   }
 });
 
+route.get("/auth-failure", async (req, res) => {
+  return res
+    .status(HttpStatus.ERROR)
+    .json({ message: "Failed to authenticate" });
+});
+
 route.get(
   "/google-passport",
   passport.authenticate("google", { scope: ["profile", "email"] }),
 );
-route.get(
-  "/google/callback",
-  passport.authenticate("google", { failureRedirect: "/login" }),
-  async (req, res) => {
-    try {
-      const { email } = req ?? {};
-      if (!email)
-        return res
-          .status(HttpStatus.UN_AUTHORIZED)
-          .json({ message: "Malformed profile body from google" });
-      const payload = { email };
-      const options = {
-        expiresIn: "15m",
-        algorithm: "HS256",
-      };
-      const token = jwt.sign(payload, appConfig.jwtSecret, options);
-      res.cookie("token", token, cookieOptions);
-      return res.redirect(appConfig.redirectUrl);
-    } catch (err) {
-      logger.error({
-        url: req.originalUrl,
-        method: req.method,
-        body: req.body,
-        stack: err.stack,
-      });
+route.get("/google/callback", googleMiddleware, async (req, res) => {
+  try {
+    const { email } = req?.userData ?? {};
+    if (!email)
       return res
-        .status(HttpStatus.ERROR)
-        .json({ message: "Something went wrong" });
-    }
-  },
-);
+        .status(HttpStatus.UN_AUTHORIZED)
+        .json({ message: "Malformed profile body from google" });
+    const payload = { email };
+    const options = {
+      expiresIn: "15m",
+      algorithm: "HS256",
+    };
+    const token = jwt.sign(payload, appConfig.jwtSecret, options);
+    res.cookie("token", token, cookieOptions);
+    return res.redirect(appConfig.redirectUrl);
+  } catch (err) {
+    logger.error({
+      url: req.originalUrl,
+      method: req.method,
+      body: req.body,
+      stack: err.stack,
+    });
+    return res
+      .status(HttpStatus.ERROR)
+      .json({ message: "Something went wrong" });
+  }
+});
 
 route.get(
   "/facebook-passport",
   passport.authenticate("facebook", { scope: ["profile", "email"] }),
 );
-route.get(
-  "/facebook/callback",
-  passport.authenticate("facebook", { failureRedirect: "/login" }),
-  async (req, res) => {
-    try {
-      const { email } = req ?? {};
-      if (!email)
-        return res
-          .status(HttpStatus.UN_AUTHORIZED)
-          .json({ message: "Malformed profile body from google" });
-      const payload = { email };
-      const options = {
-        expiresIn: "15m",
-        algorithm: "HS256",
-      };
-      const token = jwt.sign(payload, appConfig.jwtSecret, options);
-      res.cookie("token", token, cookieOptions);
-      return res.redirect(appConfig.redirectUrl);
-    } catch (err) {
-      logger.error({
-        url: req.originalUrl,
-        method: req.method,
-        body: req.body,
-        stack: err.stack,
-      });
+route.get("/facebook/callback", facebookMiddleware, async (req, res) => {
+  try {
+    const { email } = req ?? {};
+    if (!email)
       return res
-        .status(HttpStatus.ERROR)
-        .json({ message: "Something went wrong" });
-    }
-  },
-);
+        .status(HttpStatus.UN_AUTHORIZED)
+        .json({ message: "Malformed profile body from google" });
+    const payload = { email };
+    const options = {
+      expiresIn: "15m",
+      algorithm: "HS256",
+    };
+    const token = jwt.sign(payload, appConfig.jwtSecret, options);
+    res.cookie("token", token, cookieOptions);
+    return res.redirect(appConfig.redirectUrl);
+  } catch (err) {
+    logger.error({
+      url: req.originalUrl,
+      method: req.method,
+      body: req.body,
+      stack: err.stack,
+    });
+    return res
+      .status(HttpStatus.ERROR)
+      .json({ message: "Something went wrong" });
+  }
+});
 
 export { route };

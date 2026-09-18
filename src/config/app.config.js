@@ -26,4 +26,5 @@ export const appConfig = Object.freeze({
   razorpayId: process.env.RAZORPAY_ID,
   razorpaySecrets: process.env.RAZORPAY_SECRET,
   jwtSecret: process.env.JWT_SECRET,
+  redirectUrl: process.env.REDIRECT_URL
 });

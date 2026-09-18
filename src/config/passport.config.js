@@ -39,16 +39,18 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, cb) => {
       try {
+        const { _json: json = {}, id: user_id = "" } = profile || {};
+        const { name = "", email = "" } = json || {};
         const user = await UserModel.findOneAndUpdate(
-          { user_id: profile.id },
+          { user_id },
           {
             $set: {
-              email: profile.email,
-              user_id: profile.id,
-              name: profile.name,
+              email,
+              user_id,
+              name,
             },
           },
-          { new: true, upsert: true, setDefaultsOnInsert: true },
+          { upsert: true, returnDocument: "after" },
         );
         return cb(null, user);
       } catch (err) {
@@ -81,7 +83,7 @@ passport.use(
               name: profile.displayName,
             },
           },
-          { new: true, upsert: true, setDefaultsOnInsert: true },
+          { upsert: true, returnDocument: "after" },
         );
         return cb(null, user);
       } catch (err) {
