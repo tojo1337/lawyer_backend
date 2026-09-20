@@ -90,10 +90,7 @@ route.post("/login", async (req, res) => {
       algorithm: "HS256",
     };
     const token = jwt.sign(payload, appConfig.jwtSecret, options);
-    res.cookie("token", token, cookieOptions);
-    return res
-      .status(HttpStatus.OK)
-      .json({ message: "Logging in with success" });
+    return res.status(HttpStatus.OK).json({ token });
   } catch (err) {
     logger.error({
       url: req.originalUrl,
@@ -127,10 +124,7 @@ route.get("/refresh", refreshMiddleware, async (req, res) => {
       algorithm: "HS256",
     };
     const token = jwt.sign(payload, appConfig.jwtSecret, options);
-    res.cookie("token", token, cookieOptions);
-    return res
-      .status(HttpStatus.OK)
-      .json({ message: "Refresh token sent with success" });
+    return res.status(HttpStatus.OK).json({ token });
   } catch (err) {
     logger.error({
       url: req.originalUrl,
@@ -144,10 +138,11 @@ route.get("/refresh", refreshMiddleware, async (req, res) => {
   }
 });
 
+// Redriect to auth screen on failure
 route.get("/auth-failure", async (req, res) => {
   return res
     .status(HttpStatus.ERROR)
-    .json({ message: "Failed to authenticate" });
+    .redirect(appConfig.redirectUrl);
 });
 
 route.get(
@@ -167,8 +162,7 @@ route.get("/google/callback", googleMiddleware, async (req, res) => {
       algorithm: "HS256",
     };
     const token = jwt.sign(payload, appConfig.jwtSecret, options);
-    res.cookie("token", token, cookieOptions);
-    return res.redirect(appConfig.redirectUrl);
+    return res.redirect(`${appConfig.redirectUrl}?token=${token}`);
   } catch (err) {
     logger.error({
       url: req.originalUrl,
@@ -199,8 +193,7 @@ route.get("/facebook/callback", facebookMiddleware, async (req, res) => {
       algorithm: "HS256",
     };
     const token = jwt.sign(payload, appConfig.jwtSecret, options);
-    res.cookie("token", token, cookieOptions);
-    return res.redirect(appConfig.redirectUrl);
+    return res.redirect(`${appConfig.redirectUrl}?token=${token}`);
   } catch (err) {
     logger.error({
       url: req.originalUrl,
