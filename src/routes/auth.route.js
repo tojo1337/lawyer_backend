@@ -182,7 +182,7 @@ route.get(
 );
 route.get("/facebook/callback", facebookMiddleware, async (req, res) => {
   try {
-    const { email } = req ?? {};
+    const { email } = req?.userData ?? {};
     if (!email)
       return res
         .status(HttpStatus.UN_AUTHORIZED)
