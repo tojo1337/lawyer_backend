@@ -74,13 +74,15 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, cb) => {
       try {
+        const { _json: json = {}, id: user_id = "" } = profile || {};
+        const { name = "", email = "" } = json || {};
         const user = await UserModel.findOneAndUpdate(
-          { user_id: profile.id },
+          { user_id },
           {
             $set: {
-              email: profile.email,
-              user_id: profile.id,
-              name: profile.displayName,
+              email,
+              user_id,
+              name,
             },
           },
           { upsert: true, returnDocument: "after" },
