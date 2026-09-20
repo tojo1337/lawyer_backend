@@ -178,7 +178,7 @@ route.get("/google/callback", googleMiddleware, async (req, res) => {
 
 route.get(
   "/facebook-passport",
-  passport.authenticate("facebook", { scope: ["profile", "email"] }),
+  passport.authenticate("facebook", { scope: ["public_profile", "email"] }),
 );
 route.get("/facebook/callback", facebookMiddleware, async (req, res) => {
   try {
