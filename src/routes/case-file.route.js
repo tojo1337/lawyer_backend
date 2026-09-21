@@ -9,6 +9,10 @@ import * as helper from "../utils/helper.js";
 import * as common from "../utils/commons.js";
 import { CaseModel } from "../model/case.model.js";
 import { unlink } from "fs/promises";
+import { storageClient } from "../config/s3-client.config.js";
+import { DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { appConfig } from "../config/app.config.js";
+
 
 const route = Router();
 
@@ -33,7 +37,7 @@ route.post("/upload-case-file", async (req, res) => {
     await FileModel.insertOne({
       case_link: new mongoose.Types.ObjectId(caseId),
       file_name: fileInfo.originalFilename,
-      file_path: fileInfo.filepath,
+      file_path: `uploads/${fileInfo.newFilename}`,
       mime_type: fileInfo.mimetype,
       file_size: fileInfo.size,
       is_deleted: caseData.is_deleted || false,
@@ -138,14 +142,32 @@ route.get("/download-linked-file/:fileId", async (req, res) => {
         .json({ message: "No parent case found" });
     if (!targetFile)
       return res.status(HttpStatus.NOT_FOUND).json({ error: "File not found" });
-    res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
-    res.set(
+    const s3Cmd = new GetObjectCommand({
+      Bucket: appConfig.bucketName,
+      Key: targetFile?.file_path || "",
+    });
+    const s3Response = await storageClient.send(s3Cmd);
+    if (!s3Response.Body) {
+      return res.status(HttpStatus.NOT_FOUND).json({
+        message: "File content not found",
+      });
+    }
+    res.setHeader(
       "Content-Type",
       targetFile.mime_type || "application/octet-stream",
     );
-    return res
-      .status(HttpStatus.OK)
-      .download(targetFile.file_path, targetFile.file_name);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${targetFile.file_name}"`,
+    );
+    if (s3Response.ContentLength !== undefined) {
+      res.setHeader("Content-Length", s3Response.ContentLength);
+    }
+    res.setHeader(
+      "Access-Control-Expose-Headers",
+      "Content-Disposition",
+    );
+    return s3Response.Body.pipe(res);
   } catch (err) {
     logger.error({
       url: req.originalUrl,
@@ -183,8 +205,12 @@ route.get("/remove-linked-file", async (req, res) => {
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "User not authorized to perform the given action" });
+    const s3Cmd = new DeleteObjectCommand({
+      Bucket: appConfig.bucketName,
+      Key: fileRes?.file_path ?? ""
+    });
     await helper.promiseCaller([
-      () => unlink(fileRes.file_path),
+      () => storageClient.send(s3Cmd),
       () =>
         FileModel.updateOne(
           {

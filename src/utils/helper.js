@@ -9,6 +9,9 @@ import { PlansMapperModel } from "../model/plan-mapper.model.js";
 import { PlansModel } from "../model/plans.model.js";
 import { PlansEnum } from "../enum/plans.js";
 import { DateTime } from "luxon";
+import { PassThrough } from "stream";
+import { Upload } from "@aws-sdk/lib-storage";
+import { storageClient } from "../config/s3-client.config.js";
 
 const cores = os.cpus().length;
 
@@ -49,11 +52,35 @@ export function genOtpToken() {
   return otp;
 }
 
+export function fileUploadStreamHandler(file) {
+  const passStream = new PassThrough();
+  const s3FileKey = `uploads/${file.newFilename}`;
+  const uploadToS3 = new Upload({
+    client: storageClient,
+    params: {
+      Bucket: appConfig.bucketName,
+      Key: s3FileKey,
+      Body: passStream,
+    },
+    queueSize: 4,
+    partSize: 5 * 1024 * 1024,
+  });
+  uploadToS3.done().catch((err) => {
+    logger.error({
+      message: "S3 upload failed",
+      key: s3FileKey,
+      stack: err.stack,
+    });
+  });
+  return passStream;
+}
+
 export function createFormidable() {
   return formidable({
     maxFiles: 1,
-    uploadDir: "static/",
+    // uploadDir: "static/",
     maxFileSize: 50 * 1024 * 1024,
+    fileWriteStreamHandler: fileUploadStreamHandler,
   });
 }
 

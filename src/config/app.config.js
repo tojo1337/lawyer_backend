@@ -26,5 +26,9 @@ export const appConfig = Object.freeze({
   razorpayId: process.env.RAZORPAY_ID,
   razorpaySecrets: process.env.RAZORPAY_SECRET,
   jwtSecret: process.env.JWT_SECRET,
-  redirectUrl: process.env.REDIRECT_URL
+  redirectUrl: process.env.REDIRECT_URL,
+  s3Region: process.env.S3_REGION,
+  s3AccessKey: process.env.S3_ACCESS_KEY,
+  s3SecretKey: process.env.S3_SECRET_KEY,
+  bucketName: process.env.BUCKET_NAME
 });
