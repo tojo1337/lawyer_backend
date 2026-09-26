@@ -47,16 +47,16 @@ route.get("/get-active-plan", async (req, res) => {
       () => PlansModel.find({}).lean(),
     ]);
     if (!mapped_plan) {
-      const basic_plan = await PlansModel.find({
-        plan_name: "Basic",
-      }).lean();
+      const basic_plan = (all_plan_data || []).filter(
+        (item) => item.plan_name === "Basic",
+      )[0];
       const _resp = await PlansMapperModel.findOneAndUpdate(
         { user_id: new mongoose.Types.ObjectId(id) },
         {
           $set: {
             subscription_id: helper.genUuid(),
             user_id: new mongoose.Types.ObjectId(id),
-            plan_id: basic_plan._id,
+            plan_id: new mongoose.Types.ObjectId(basic_plan._id),
           },
         },
         {
@@ -68,7 +68,7 @@ route.get("/get-active-plan", async (req, res) => {
       return res.status(HttpStatus.ERROR).json({ data: basic_plan });
     }
     let response_plan = all_plan_data.reduce((acc, item) => {
-      if (item.plan_id === mapped_plan.plan_id) {
+      if (item._id.toString() === mapped_plan.plan_id.toString()) {
         acc = item;
       }
       return acc;
