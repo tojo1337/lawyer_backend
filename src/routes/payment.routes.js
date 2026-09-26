@@ -41,34 +41,38 @@ route.get("/get-active-plan", async (req, res) => {
       () =>
         PlansMapperModel.findOne({
           user_id: new mongoose.Types.ObjectId(id),
-          created_at: -1,
-        }).lean(),
+        })
+          .sort({ created_at: -1 })
+          .lean(),
       () => PlansModel.find({}).lean(),
     ]);
+    if (!mapped_plan) {
+      const basic_plan = await PlansModel.find({
+        plan_name: "Basic",
+      }).lean();
+      const _resp = await PlansMapperModel.findOneAndUpdate(
+        { user_id: new mongoose.Types.ObjectId(id) },
+        {
+          $set: {
+            subscription_id: helper.genUuid(),
+            user_id: new mongoose.Types.ObjectId(id),
+            plan_id: basic_plan._id,
+          },
+        },
+        {
+          upsert: true,
+          returnDocument: "after",
+          sort: { start_date: -1 },
+        },
+      );
+      return res.status(HttpStatus.ERROR).json({ data: basic_plan });
+    }
     let response_plan = all_plan_data.reduce((acc, item) => {
       if (item.plan_id === mapped_plan.plan_id) {
         acc = item;
       }
       return acc;
     }, null);
-    if (!response_plan) {
-      const basic_plan = await PlansModel.find({
-        plan_name: "Basic",
-      }).lean();
-      await PlansMapperModel.findOneAndUpdate(
-        { user_id: new mongoose.Types.ObjectId(id), created_at: -1 },
-        {
-          subscription_id: helper.genUuid(),
-          user_id: new mongoose.Types.ObjectId(id),
-          plan_id: basic_plan._id,
-        },
-        {
-          new: true,
-          upsert: true,
-        },
-      );
-      return res.status(HttpStatus.ERROR).json({ data: basic_plan });
-    }
     return res.status(HttpStatus.OK).send({ data: response_plan });
   } catch (err) {
     logger.error({

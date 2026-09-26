@@ -24,7 +24,7 @@ const PlanMapper = new mongoose.Schema(
   },
   {
     versionKey: false,
-    collection: ModelName.PlansModel,
+    collection: ModelName.PlansMapperModel,
     timestamps: false,
   },
 );
