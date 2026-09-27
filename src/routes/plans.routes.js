@@ -108,12 +108,16 @@ route.get("/create-checkout-session", async (req, res) => {
         .json({ message: "Plan doesn't exist" });
     const checkoutPayload = {
       plan_id,
-      total_count: 12,
-      quantity: 1,
-      customer_notify: true,
+      total_count: Number.isInteger(Number(appConfig.totalProductCount))
+        ? Number(appConfig.totalProductCount)
+        : 12,
+      quantity: Number.isInteger(Number(appConfig.productQuantityPerMonth))
+        ? Number(appConfig.productQuantityPerMonth)
+        : 1,
+      customer_notify: appConfig.customerNotifire === "true" ? true : false,
     };
     const { id: sub_id = "", plan_id: planId = "" } =
-      (await paymentGateway.subscription.create(checkoutPayload)) || {};
+      (await paymentGateway.subscriptions.create(checkoutPayload)) || {};
     await PlansMapperModel.insertOne({
       user_id: id,
       subscription_id: sub_id,

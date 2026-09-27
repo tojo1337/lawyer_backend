@@ -25,10 +25,13 @@ export const appConfig = Object.freeze({
   maxOverlaps: process.env.MAX_OVERLAPS,
   razorpayId: process.env.RAZORPAY_ID,
   razorpaySecrets: process.env.RAZORPAY_SECRET,
+  totalProductCount: process.env.TOTAL_PRODUCT_COUNT,
+  productQuantityPerMonth: process.env.PRODUCT_QUANTITY_PER_MONTH,
+  customerNotifire: process.env.CUSTOMER_NOTIFIRE,
   jwtSecret: process.env.JWT_SECRET,
   redirectUrl: process.env.REDIRECT_URL,
   s3Region: process.env.S3_REGION,
   s3AccessKey: process.env.S3_ACCESS_KEY,
   s3SecretKey: process.env.S3_SECRET_KEY,
-  bucketName: process.env.BUCKET_NAME
+  bucketName: process.env.BUCKET_NAME,
 });
