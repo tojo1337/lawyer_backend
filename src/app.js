@@ -38,7 +38,7 @@ async function main() {
     app.use("/common", commonRoute);
     app.use("/case-file", caseFileRoute);
     app.use("/chat", chatStreamRoute);
-    app.use("/plans", payemntRoute);
+    app.use("/plans", plansRoute);
 
     server.listen(appConfig.port, () => {
       logger.info(`Server started at port : ${appConfig.port}`);
