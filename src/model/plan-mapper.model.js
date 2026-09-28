@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { ModelName } from "../enum/model-name.js";
+import { activationTypes } from "../enum/activation-types.js";
 
 const PlanMapper = new mongoose.Schema(
   {
@@ -17,9 +18,16 @@ const PlanMapper = new mongoose.Schema(
     },
     start_date: {
       type: Date,
+      required: true,
     },
     end_date: {
       type: Date,
+      required: true,
+    },
+    activation_status: {
+      type: String,
+      enum: [...Object.values(activationTypes)],
+      default: activationTypes.pending,
     },
   },
   {

@@ -11,6 +11,8 @@ import { validateWebhookSignature } from "razorpay/dist/utils/razorpay-utils.js"
 import { jwtMiddleware } from "../middleware/jwt.middleware.js";
 import * as helper from "../utils/helper.js";
 import mongoose from "mongoose";
+import { UserModel } from "../model/user.model.js";
+import { DateTime } from "luxon";
 
 const route = Router();
 const paymentGateway = gateway;
@@ -99,15 +101,19 @@ route.get("/create-checkout-session", async (req, res) => {
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "Plan id is required" });
-    const planData = await PlansModel.find({
-      _id: new mongoose.Types.ObjectId(plan_id),
-    }).lean();
+    const [planData, userData] = await helper.promiseCaller([
+      () =>
+        PlansModel.find({
+          _id: new mongoose.Types.ObjectId(plan_id),
+        }).lean(),
+      () => UserModel.findById(id).lean(),
+    ]);
     if (!planData.length)
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "Plan doesn't exist" });
     const checkoutPayload = {
-      plan_id,
+      plan_id: planData[0]?.plan_id || "",
       total_count: Number.isInteger(Number(appConfig.totalProductCount))
         ? Number(appConfig.totalProductCount)
         : 12,
@@ -116,16 +122,26 @@ route.get("/create-checkout-session", async (req, res) => {
         : 1,
       customer_notify: appConfig.customerNotifire === "true" ? true : false,
     };
-    const { id: sub_id = "", plan_id: planId = "" } =
+    const order =
       (await paymentGateway.subscriptions.create(checkoutPayload)) || {};
+    const startingDate = DateTime.now().toJSDate();
+    const endingDate = DateTime.now().plus({ days: 30 }).toJSDate();
     await PlansMapperModel.insertOne({
       user_id: id,
-      subscription_id: sub_id,
-      plan_id: planId,
+      subscription_id: order.id,
+      plan_id: order.plan_id,
+      start_date: startingDate,
+      end_date: endingDate,
     });
     return res.status(HttpStatus.OK).json({
-      subscription_id: subscription.id,
+      ...order,
+      subscription_id: order.id,
       key: appConfig.razorpayId,
+      prefill: {
+        email: userData?.email || "",
+        name: userData?.name || "",
+        contact: userData?.contact || "",
+      },
     });
   } catch (err) {
     logger.error({

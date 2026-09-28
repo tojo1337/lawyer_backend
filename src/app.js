@@ -16,6 +16,7 @@ import { route as pingRoute } from "./routes/ping.route.js";
 import { route as casesRoute } from "./routes/cases.route.js";
 import { route as commonRoute } from "./routes/common.route.js";
 import { route as plansRoute } from "./routes/plans.routes.js";
+import { route as webhookRoute } from "./routes/webhook.route.js";
 import { route as caseFileRoute } from "./routes/case-file.route.js";
 import { route as chatStreamRoute } from "./routes/chat-stream.route.js";
 import { vectorCollectionCreator } from "./utils/vector-collection-creator.js";
@@ -39,6 +40,7 @@ async function main() {
     app.use("/case-file", caseFileRoute);
     app.use("/chat", chatStreamRoute);
     app.use("/plans", plansRoute);
+    app.use("/webhook", webhookRoute);
 
     server.listen(appConfig.port, () => {
       logger.info(`Server started at port : ${appConfig.port}`);

@@ -12,6 +12,7 @@ import { DateTime } from "luxon";
 import { PassThrough } from "stream";
 import { Upload } from "@aws-sdk/lib-storage";
 import { storageClient } from "../config/s3-client.config.js";
+import { activationTypes } from "../enum/activation-types.js";
 
 const cores = os.cpus().length;
 
@@ -105,6 +106,7 @@ export async function getCurrentPlan(userId) {
         plan_id: basicPlan._id,
         start_date: currentDate.toJSDate(),
         end_date: expirydate.toJSDate(),
+        activation_status: activationTypes.active,
       });
       currentPlanId = responseData._id;
     }
