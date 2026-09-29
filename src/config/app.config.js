@@ -25,6 +25,7 @@ export const appConfig = Object.freeze({
   maxOverlaps: process.env.MAX_OVERLAPS,
   razorpayId: process.env.RAZORPAY_ID,
   razorpaySecrets: process.env.RAZORPAY_SECRET,
+  webhookSecret: process.env.WEBHOOK_SECRET,
   totalProductCount: process.env.TOTAL_PRODUCT_COUNT,
   productQuantityPerMonth: process.env.PRODUCT_QUANTITY_PER_MONTH,
   customerNotifire: process.env.CUSTOMER_NOTIFIRE,
