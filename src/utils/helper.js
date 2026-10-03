@@ -85,6 +85,7 @@ export function createFormidable() {
   });
 }
 
+// There is an issue in here while assiging plan
 // Need to check if this is catching the paid tier or free tier
 export async function getCurrentPlan(userId) {
   try {
@@ -94,8 +95,9 @@ export async function getCurrentPlan(userId) {
       user_id: new mongoose.Types.ObjectId(userId ?? ""),
       start_date: { $lte: currentDate },
       end_date: { $gte: currentDate },
+      activation_status: activationTypes.active,
     }).lean();
-    currentPlan = currentActivePlans[0].plan_id ?? '';
+    currentPlan = currentActivePlans[0].plan_id ?? "";
     if (!currentActivePlans.length) {
       const basicPlan = await PlansModel.findOne({
         plan_name: PlansEnum.basic,
@@ -119,6 +121,6 @@ export async function getCurrentPlan(userId) {
   }
 }
 
-export function randomIdGen(){
+export function randomIdGen() {
   return crypto.randomUUID();
 }

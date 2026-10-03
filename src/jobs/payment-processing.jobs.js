@@ -55,7 +55,10 @@ async function removeActivePlan(payload) {
       throw new Error("No mapped plan or plan entity on db");
     if (mappedPlan[0].plan_id === planEntity[0].plan_id) {
       const now = DateTime.now();
-      await PlansMapperModel.deleteOne({ _id: mappedPlan[0]._id });
+      await PlansMapperModel.updateOne(
+        { _id: mappedPlan[0]._id },
+        { $set: { activation_status: activationTypes.deactivate } },
+      );
     }
   } catch (err) {
     throw err;

@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { response, Router } from "express";
 import { logger } from "../config/pino.config.js";
 import { HttpStatus } from "../enum/http-status.js";
 import { gateway } from "../config/razorpay.config.js";
@@ -13,6 +13,7 @@ import * as helper from "../utils/helper.js";
 import mongoose from "mongoose";
 import { UserModel } from "../model/user.model.js";
 import { DateTime } from "luxon";
+import { activationTypes } from "../enum/activation-types.js";
 
 const route = Router();
 const paymentGateway = gateway;
@@ -43,8 +44,9 @@ route.get("/get-active-plan", async (req, res) => {
       () =>
         PlansMapperModel.findOne({
           user_id: new mongoose.Types.ObjectId(id),
+          activation_status: activationTypes.active,
         })
-          .sort({ created_at: -1 })
+          .sort({ start_date: -1 })
           .lean(),
       () => PlansModel.find({}).lean(),
     ]);
@@ -52,6 +54,8 @@ route.get("/get-active-plan", async (req, res) => {
       const basic_plan = (all_plan_data || []).filter(
         (item) => item.plan_name === "Basic",
       )[0];
+      const startDate = DateTime.now();
+      const endDate = startDate.plus({ days: 30 });
       const _resp = await PlansMapperModel.findOneAndUpdate(
         { user_id: new mongoose.Types.ObjectId(id) },
         {
@@ -59,6 +63,9 @@ route.get("/get-active-plan", async (req, res) => {
             subscription_id: helper.genUuid(),
             user_id: new mongoose.Types.ObjectId(id),
             plan_id: new mongoose.Types.ObjectId(basic_plan._id),
+            start_date: startDate.toJSDate(),
+            end_date: endDate.toJSDate(),
+            activation_status: activationTypes.active,
           },
         },
         {
@@ -67,10 +74,14 @@ route.get("/get-active-plan", async (req, res) => {
           sort: { start_date: -1 },
         },
       );
-      return res.status(HttpStatus.ERROR).json({ data: basic_plan });
+      basic_plan.start_date = startDate;
+      basic_plan.end_date = endDate;
+      return res.status(HttpStatus.OK).json({ data: basic_plan });
     }
     let response_plan = all_plan_data.reduce((acc, item) => {
-      if (item._id.toString() === mapped_plan.plan_id.toString()) {
+      if (item.plan_id.toString() === mapped_plan.plan_id.toString()) {
+        item.start_date = mapped_plan.start_date;
+        item.end_date = mapped_plan.end_date;
         acc = item;
       }
       return acc;
