@@ -102,25 +102,23 @@ export async function getCurrentPlan(userId) {
     if (!currentActivePlans.length) {
       const basicPlan = await PlansModel.findOne({
         plan_name: PlansEnum.basic,
-      });
+      }).lean();
       const expirydate = currentDate.plus({ days: 30 });
       const responseData = await PlansMapperModel.insertOne({
         user_id: new mongoose.Types.ObjectId(userId),
-        plan_id: basicPlan._id,
+        plan_id: basicPlan.plan_id,
         subscription_id: genUuid(),
         start_date: currentDate.toJSDate(),
         end_date: expirydate.toJSDate(),
         activation_status: activationTypes.active,
-      }, {
-        
       });
       currentPlanId = responseData?.plan_id || null;
     } else {
       currentPlanId = currentActivePlans[0]?.plan_id || null;
     }
     const mappedoutPlan = await PlansModel.findOne({
-      _id: currentPlanId,
-    });
+      plan_id: currentPlanId,
+    }).lean();
     return mappedoutPlan;
   } catch (err) {
     throw err;
