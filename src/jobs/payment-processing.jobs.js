@@ -19,7 +19,7 @@ const knownEventTypes = [
 
 const paymentLookup = {
   "subscription.activated": planActivation,
-  "subscription.updated": removeActivePlan,
+  "subscription.updated": updateActivePlan,
   "subscription.pending": removeActivePlan,
   "subscription.halted": removeActivePlan,
   "subscription.paused": removeActivePlan,
@@ -54,7 +54,6 @@ async function removeActivePlan(payload) {
     if (!mappedPlan.length || !planEntity.length)
       throw new Error("No mapped plan or plan entity on db");
     if (mappedPlan[0].plan_id === planEntity[0].plan_id) {
-      const now = DateTime.now();
       await PlansMapperModel.updateOne(
         { _id: mappedPlan[0]._id },
         { $set: { activation_status: activationTypes.deactivate } },
@@ -95,10 +94,12 @@ async function planActivation(payload) {
   }
 }
 
-async function planUpdate(payload) {
+async function updateActivePlan(payload) {
   try {
     const { plan_id: planId = "", id: subId = "" } =
       payload?.subscription?.entity || {};
+    // Need to add data for those situation when things are going to change on plan end
+    // Plans are mostly handled from the application end but still this event is crucial
   } catch (err) {
     throw err;
   }
