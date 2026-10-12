@@ -184,16 +184,21 @@ route.get("/get-case-info/:caseId", async (req, res) => {
       previous_date,
       next_date,
     } = foundData || {};
+    const [courtName, particulars, stage] = await helper.promiseCaller([
+      () => CourtNameModel.findById(court_name).lean(),
+      () => ParticularsModel.findById(case_particulars).lean(),
+      () => CurrentStageModel.findById(current_stage).lean(),
+    ]);
     const payload = {
       caseId: caseIdVal,
       registrationDate: date_of_registration,
-      courtName: court_name,
+      courtName: courtName?.name || '',
       caseNumber: case_number,
       litigant,
       litigantContact: litigant_contact,
-      particulars: case_particulars,
+      particulars: particulars?.name || '',
       year,
-      currentStage: current_stage,
+      currentStage: stage?.name || '',
       previousDate: previous_date,
       nextDate: next_date,
     };
