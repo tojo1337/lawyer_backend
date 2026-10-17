@@ -52,12 +52,16 @@ const CaseSchema = new mongoose.Schema(
     },
     is_deleted: {
       type: Boolean,
-      default: false
+      default: false,
     },
     is_completed: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
+    litigant_image: {
+      type: String,
+      default: "",
+    },
   },
   {
     versionKey: false,

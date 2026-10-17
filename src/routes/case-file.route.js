@@ -6,13 +6,10 @@ import { HttpStatus } from "../enum/http-status.js";
 import { jwtMiddleware } from "../middleware/jwt.middleware.js";
 import { FileModel } from "../model/file.model.js";
 import * as helper from "../utils/helper.js";
-import * as common from "../utils/commons.js";
 import { CaseModel } from "../model/case.model.js";
-import { unlink } from "fs/promises";
 import { storageClient } from "../config/s3-client.config.js";
 import { DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { appConfig } from "../config/app.config.js";
-
 
 const route = Router();
 
@@ -163,10 +160,7 @@ route.get("/download-linked-file/:fileId", async (req, res) => {
     if (s3Response.ContentLength !== undefined) {
       res.setHeader("Content-Length", s3Response.ContentLength);
     }
-    res.setHeader(
-      "Access-Control-Expose-Headers",
-      "Content-Disposition",
-    );
+    res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
     return s3Response.Body.pipe(res);
   } catch (err) {
     logger.error({
@@ -207,7 +201,7 @@ route.get("/remove-linked-file", async (req, res) => {
         .json({ message: "User not authorized to perform the given action" });
     const s3Cmd = new DeleteObjectCommand({
       Bucket: appConfig.bucketName,
-      Key: fileRes?.file_path ?? ""
+      Key: fileRes?.file_path ?? "",
     });
     await helper.promiseCaller([
       () => storageClient.send(s3Cmd),
@@ -223,6 +217,38 @@ route.get("/remove-linked-file", async (req, res) => {
     return res
       .status(HttpStatus.OK)
       .json({ message: "File delted with success" });
+  } catch (err) {
+    logger.error({
+      url: req.originalUrl,
+      method: req.method,
+      body: req.body,
+      stack: err.stack,
+    });
+    return res
+      .status(HttpStatus.ERROR)
+      .json({ message: "Something went wrong" });
+  }
+});
+
+route.get("/upload-litigant-profile", async (req, res) => {
+  try {
+    const { id } = req?.userData || {};
+    const form = helper.createFormidable();
+    const [fields, files] = await form.parse(req);
+    const fileInfo = files?.file[0] || {};
+    const caseId = fields?.caseId[0] || "";
+    if (!fileInfo || !caseId || !id)
+      return res.status(HttpStatus.ERROR).json({
+        message:
+          "Either id or file or associated case id was not attached with the request",
+      });
+    const originalFilename = fileInfo?.originalFilename || "";
+    if (!helper.imageFileChecker(originalFilename))
+      return res
+        .status(HttpStatus.ERROR)
+        .json({
+          message: "Not of supported type, supported types are png and jpg",
+        });
   } catch (err) {
     logger.error({
       url: req.originalUrl,

@@ -53,6 +53,9 @@ export function genOtpToken() {
   return otp;
 }
 
+// Store profile images on case collection
+// Upload profile images under /profile/{name}
+//  Add a new stream helper and a middleware like this for profile image
 export function fileUploadStreamHandler(file) {
   const passStream = new PassThrough();
   const s3FileKey = `uploads/${file.newFilename}`;
@@ -127,4 +130,15 @@ export async function getCurrentPlan(userId) {
 
 export function randomIdGen() {
   return crypto.randomUUID();
+}
+
+const supportedExts = [".png", ".jpeg", ".jpg"];
+
+export function imageFileChecker(fileName) {
+  return supportedExts.reduce((acc, item) => {
+    if ((fileName || "").includes(item)) {
+      acc = true;
+    }
+    return acc;
+  }, false);
 }
