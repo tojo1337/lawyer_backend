@@ -13,7 +13,7 @@ import { appConfig } from "../config/app.config.js";
 
 const route = Router();
 
-route.use(jwtMiddleware);
+// route.use(jwtMiddleware);
 
 route.post("/upload-case-file", async (req, res) => {
   try {
@@ -230,13 +230,13 @@ route.get("/remove-linked-file", async (req, res) => {
   }
 });
 
-route.get("/upload-litigant-profile", async (req, res) => {
+route.post("/upload-litigant-profile", async (req, res) => {
   try {
-    const { id } = req?.userData || {};
-    const form = helper.createFormidable();
+    // const { id } = req?.userData || {};
+    const form = helper.litigantProfileUploader();
     const [fields, files] = await form.parse(req);
-    const fileInfo = files?.file[0] || {};
-    const caseId = fields?.caseId[0] || "";
+    const fileInfo = files?.file?.[0] || {};
+    const caseId = fields?.caseId?.[0] || "";
     if (!fileInfo || !caseId || !id)
       return res.status(HttpStatus.ERROR).json({
         message:

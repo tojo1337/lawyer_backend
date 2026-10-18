@@ -9,7 +9,7 @@ import { PlansMapperModel } from "../model/plan-mapper.model.js";
 import { PlansModel } from "../model/plans.model.js";
 import { PlansEnum } from "../enum/plans.js";
 import { DateTime } from "luxon";
-import { PassThrough } from "stream";
+import { PassThrough, Writable } from "stream";
 import { Upload } from "@aws-sdk/lib-storage";
 import { storageClient } from "../config/s3-client.config.js";
 import { activationTypes } from "../enum/activation-types.js";
@@ -132,13 +132,36 @@ export function randomIdGen() {
   return crypto.randomUUID();
 }
 
-const supportedExts = [".png", ".jpeg", ".jpg"];
-
+const supportedFormats = [".png", ".jpg", ".jpeg", ".heic", ".webp"];
 export function imageFileChecker(fileName) {
-  return supportedExts.reduce((acc, item) => {
+  return (supportedFormats || []).reduce((acc, item) => {
     if ((fileName || "").includes(item)) {
       acc = true;
     }
     return acc;
   }, false);
+}
+
+export function litigantProfileUploader() {
+  return formidable({
+    maxFiles: 1,
+    maxFileSize: 10 * 1024 * 1024,
+    fileWriteStreamHandler: (file) => {
+      const chunks = [];
+      const memoryStream = new Writable({
+        write(chunk, encoding, callback) {
+          chunks.push(chunk);
+          callback();
+        },
+        final(callback) {
+          const fileBuffer = Buffer.concat(chunks);
+          console.log(
+            `Successfully intercepted "${file.originalFilename}" (${fileBuffer.length} bytes) without saving to disk!`,
+          );
+          callback();
+        },
+      });
+      return memoryStream;
+    },
+  });
 }
