@@ -142,26 +142,33 @@ export function imageFileChecker(fileName) {
   }, false);
 }
 
+export function litigantProfileUploaderHelper(file) {
+  const passStream = new PassThrough();
+  const s3FileKey = `profiles-images/${file.newFilename}`;
+  const uploadToS3 = new Upload({
+    client: storageClient,
+    params: {
+      Bucket: appConfig.bucketName,
+      Key: s3FileKey,
+      Body: passStream,
+    },
+    queueSize: 4,
+    partSize: 5 * 1024 * 1024,
+  });
+  uploadToS3.done().catch((err) => {
+    logger.error({
+      message: "S3 upload failed",
+      key: s3FileKey,
+      stack: err.stack,
+    });
+  });
+  return passStream;
+}
+
 export function litigantProfileUploader() {
   return formidable({
     maxFiles: 1,
     maxFileSize: 10 * 1024 * 1024,
-    fileWriteStreamHandler: (file) => {
-      const chunks = [];
-      const memoryStream = new Writable({
-        write(chunk, encoding, callback) {
-          chunks.push(chunk);
-          callback();
-        },
-        final(callback) {
-          const fileBuffer = Buffer.concat(chunks);
-          console.log(
-            `Successfully intercepted "${file.originalFilename}" (${fileBuffer.length} bytes) without saving to disk!`,
-          );
-          callback();
-        },
-      });
-      return memoryStream;
-    },
+    fileWriteStreamHandler: litigantProfileUploaderHelper,
   });
 }

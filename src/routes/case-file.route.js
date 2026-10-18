@@ -13,7 +13,7 @@ import { appConfig } from "../config/app.config.js";
 
 const route = Router();
 
-// route.use(jwtMiddleware);
+route.use(jwtMiddleware);
 
 route.post("/upload-case-file", async (req, res) => {
   try {
@@ -232,7 +232,7 @@ route.get("/remove-linked-file", async (req, res) => {
 
 route.post("/upload-litigant-profile", async (req, res) => {
   try {
-    // const { id } = req?.userData || {};
+    const { id } = req?.userData || {};
     const form = helper.litigantProfileUploader();
     const [fields, files] = await form.parse(req);
     const fileInfo = files?.file?.[0] || {};
@@ -249,6 +249,65 @@ route.post("/upload-litigant-profile", async (req, res) => {
         .json({
           message: "Not of supported type, supported types are png and jpg",
         });
+    await CaseModel.updateOne(
+      { _id: new mongoose.Types.ObjectId(caseId) },
+      {
+        $set: {
+          litigant_image: `profiles-images/${fileInfo?.newFilename || ""}`,
+        },
+      },
+    );
+    return res
+      .status(HttpStatus.OK)
+      .json({ data: "updated litigant profile image with success" });
+  } catch (err) {
+    logger.error({
+      url: req.originalUrl,
+      method: req.method,
+      body: req.body,
+      stack: err.stack,
+    });
+    return res
+      .status(HttpStatus.ERROR)
+      .json({ message: "Something went wrong" });
+  }
+});
+
+route.get("/get-profile-image", async (req, res) => {
+  try {
+    const { id = "" } = req?.userData || {};
+    const { file_path = "" } = req.query || {};
+    if (!id || !file_path)
+      return res.status(HttpStatus.ERROR).json({
+        message: "User needs to be logged in and file_path is required",
+      });
+    if (!(file_path || "")?.includes("/profiles-images/"))
+      return res
+        .status(HttpStatus.ERROR)
+        .json({ message: "Not a valid path for profile image" });
+    const s3Cmd = new GetObjectCommand({
+      Bucket: appConfig.bucketName,
+      Key: file_path || "",
+    });
+    const s3Response = await storageClient.send(s3Cmd);
+    if (!s3Response.Body) {
+      return res.status(HttpStatus.NOT_FOUND).json({
+        message: "File content not found",
+      });
+    }
+    res.setHeader(
+      "Content-Type",
+      targetFile.mime_type || "application/octet-stream",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${targetFile.file_name}"`,
+    );
+    if (s3Response.ContentLength !== undefined) {
+      res.setHeader("Content-Length", s3Response.ContentLength);
+    }
+    res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
+    return s3Response.Body.pipe(res);
   } catch (err) {
     logger.error({
       url: req.originalUrl,
