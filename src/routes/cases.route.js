@@ -183,6 +183,7 @@ route.get("/get-case-info/:caseId", async (req, res) => {
       current_stage,
       previous_date,
       next_date,
+      litigant_image
     } = foundData || {};
     const [courtName, particulars, stage] = await helper.promiseCaller([
       () => CourtNameModel.findById(court_name).lean(),
@@ -201,6 +202,7 @@ route.get("/get-case-info/:caseId", async (req, res) => {
       currentStage: stage?.name || '',
       previousDate: previous_date,
       nextDate: next_date,
+      litigant_image
     };
     return res
       .status(HttpStatus.OK)

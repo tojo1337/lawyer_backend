@@ -281,7 +281,7 @@ route.get("/get-profile-image", async (req, res) => {
       return res.status(HttpStatus.ERROR).json({
         message: "User needs to be logged in and file_path is required",
       });
-    if (!(file_path || "")?.includes("/profiles-images/"))
+    if (!(file_path || "")?.includes("profiles-images/"))
       return res
         .status(HttpStatus.ERROR)
         .json({ message: "Not a valid path for profile image" });
@@ -295,14 +295,14 @@ route.get("/get-profile-image", async (req, res) => {
         message: "File content not found",
       });
     }
-    res.setHeader(
-      "Content-Type",
-      targetFile.mime_type || "application/octet-stream",
-    );
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${targetFile.file_name}"`,
-    );
+    // res.setHeader(
+    //   "Content-Type",
+    //   targetFile.mime_type || "application/octet-stream",
+    // );
+    // res.setHeader(
+    //   "Content-Disposition",
+    //   `attachment; filename="${targetFile.file_name}"`,
+    // );
     if (s3Response.ContentLength !== undefined) {
       res.setHeader("Content-Length", s3Response.ContentLength);
     }
