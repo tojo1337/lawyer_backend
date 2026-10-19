@@ -295,14 +295,6 @@ route.get("/get-profile-image", async (req, res) => {
         message: "File content not found",
       });
     }
-    // res.setHeader(
-    //   "Content-Type",
-    //   targetFile.mime_type || "application/octet-stream",
-    // );
-    // res.setHeader(
-    //   "Content-Disposition",
-    //   `attachment; filename="${targetFile.file_name}"`,
-    // );
     if (s3Response.ContentLength !== undefined) {
       res.setHeader("Content-Length", s3Response.ContentLength);
     }
