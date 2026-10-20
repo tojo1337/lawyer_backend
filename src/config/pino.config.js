@@ -1,7 +1,9 @@
 import pino from "pino";
 import { appConfig } from "./app.config.js";
 
-const logFilePath = `./log/app-log-${new Date().toDateString().replaceAll(/\s/g, "-")}.log`;
+// Use this log file for production
+// const logFilePath = `./log/app-log-${new Date().toDateString().replaceAll(/\s/g, "-")}.log`;
+const logFilePath = `./log/app-log.log`;
 
 const multiConfigSystem = {
   dev: {
