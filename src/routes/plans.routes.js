@@ -156,7 +156,7 @@ route.get("/create-checkout-session", async (req, res) => {
       url: req.originalUrl,
       method: req.method,
       body: req.body,
-      stack: err.stack,
+      stack: err?.stack ?? err?.error?.description ?? "",
     });
     return res
       .status(HttpStatus.SERVER_ERROR)
