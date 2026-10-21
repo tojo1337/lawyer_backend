@@ -69,14 +69,7 @@ export function fileUploadStreamHandler(file) {
     queueSize: 4,
     partSize: 5 * 1024 * 1024,
   });
-  uploadToS3.done().catch((err) => {
-    logger.error({
-      message: "S3 upload failed",
-      key: s3FileKey,
-      stack: err.stack,
-    });
-  });
-  return passStream;
+  return { writeStream: passStream, promise: uploadToS3.done() };
 }
 
 export function createFormidable() {
@@ -84,7 +77,11 @@ export function createFormidable() {
     maxFiles: 1,
     // uploadDir: "static/",
     maxFileSize: 512 * 1024 * 1024,
-    fileWriteStreamHandler: fileUploadStreamHandler,
+    fileWriteStreamHandler: (file) => {
+      const { writeStream, promise } = fileUploadStreamHandler(file);
+      file.s3UploadPromise = promise;
+      return writeStream;
+    },
   });
 }
 
@@ -155,20 +152,21 @@ export function litigantProfileUploaderHelper(file) {
     queueSize: 4,
     partSize: 5 * 1024 * 1024,
   });
-  uploadToS3.done().catch((err) => {
-    logger.error({
-      message: "S3 upload failed",
-      key: s3FileKey,
-      stack: err.stack,
-    });
-  });
-  return passStream;
+
+  return {
+    writeStream: passStream,
+    promise: uploadToS3.done(),
+  };
 }
 
 export function litigantProfileUploader() {
   return formidable({
     maxFiles: 1,
     maxFileSize: 50 * 1024 * 1024,
-    fileWriteStreamHandler: litigantProfileUploaderHelper,
+    fileWriteStreamHandler: (file) => {
+      const { writeStream, promise } = litigantProfileUploaderHelper(file);
+      file.s3UploadPromise = promise;
+      return writeStream;
+    },
   });
 }

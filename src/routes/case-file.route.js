@@ -1,4 +1,3 @@
-import path from "path";
 import mongoose from "mongoose";
 import { Router } from "express";
 import { logger } from "../config/pino.config.js";
@@ -27,6 +26,9 @@ route.post("/upload-case-file", async (req, res) => {
         message:
           "Either id or file or associated case id was not attached with the request",
       });
+    if (fileInfo.s3UploadPromise) {
+      await fileInfo.s3UploadPromise;
+    }
     const [caseData] = await CaseModel.find({
       _id: new mongoose.Types.ObjectId(caseId),
       case_owner: new mongoose.Types.ObjectId(id),
@@ -237,6 +239,7 @@ route.post("/upload-litigant-profile", async (req, res) => {
     const [fields, files] = await form.parse(req);
     const fileInfo = files?.file?.[0] || {};
     const caseId = fields?.caseId?.[0] || "";
+
     if (!fileInfo || !caseId || !id)
       return res.status(HttpStatus.ERROR).json({
         message:
@@ -244,11 +247,12 @@ route.post("/upload-litigant-profile", async (req, res) => {
       });
     const originalFilename = fileInfo?.originalFilename || "";
     if (!helper.imageFileChecker(originalFilename))
-      return res
-        .status(HttpStatus.ERROR)
-        .json({
-          message: "Not of supported type, supported types are png and jpg",
-        });
+      return res.status(HttpStatus.ERROR).json({
+        message: "Not of supported type, supported types are png and jpg",
+      });
+    if (fileInfo.s3UploadPromise) {
+      await fileInfo.s3UploadPromise;
+    }
     await CaseModel.updateOne(
       { _id: new mongoose.Types.ObjectId(caseId) },
       {
@@ -269,7 +273,7 @@ route.post("/upload-litigant-profile", async (req, res) => {
     });
     return res
       .status(HttpStatus.ERROR)
-      .json({ message: "Something went wrong" });
+      .json({ message: "Something went wrong during file upload" });
   }
 });
 
