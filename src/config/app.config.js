@@ -14,6 +14,7 @@ export const appConfig = Object.freeze({
   fbClientId: process.env.FB_CLIENT_ID,
   fbClientSecret: process.env.FB_CLIENT_SECRET,
   vectorDbUrl: process.env.VECTOR_DB_URL,
+  vectorDbApiKey: process.env.VECTOR_DB_API_KEY,
   jwksUri: process.env.JWKS_URI,
   semanticValue: process.env.SEMANTIC_VALUE,
   vectorValue: process.env.VECTOR_VALUE,

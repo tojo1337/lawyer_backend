@@ -10,10 +10,11 @@ class VectorDbInstance {
       return VectorDbInstance.instance;
     }
     try {
-      const mongo_address = appConfig.appDb;
       this.connection = new QdrantVector({
         id: "qdrant-vector-client",
-        uri: appConfig.vectorDbUrl,
+        url: appConfig.vectorDbUrl,
+        apiKey: appConfig.vectorDbApiKey,
+        checkCompatibility: false,
       });
       VectorDbInstance.instance = this;
     } catch (err) {
