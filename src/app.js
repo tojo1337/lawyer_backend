@@ -54,7 +54,6 @@ async function main() {
 async function explicitShutdown(signal) {
   try {
     await agenda.stop();
-    io.close();
     server.close();
     logger.error({ signal }, "Interrupted");
   } catch (err) {
