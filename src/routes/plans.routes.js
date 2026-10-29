@@ -59,7 +59,7 @@ route.get("/get-active-plan", async (req, res) => {
           $set: {
             subscription_id: helper.genUuid(),
             user_id: new mongoose.Types.ObjectId(id),
-            plan_id: new mongoose.Types.ObjectId(basic_plan._id),
+            plan_id: basic_plan.plan_id,
             start_date: startDate.toJSDate(),
             end_date: endDate.toJSDate(),
             activation_status: activationTypes.active,
