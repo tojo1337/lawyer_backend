@@ -19,7 +19,9 @@ import { route as plansRoute } from "./routes/plans.routes.js";
 import { route as webhookRoute } from "./routes/webhook.route.js";
 import { route as caseFileRoute } from "./routes/case-file.route.js";
 import { route as chatStreamRoute } from "./routes/chat-stream.route.js";
+import { route as updatesRoute } from "./routes/hot-updater.routes.js";
 import { vectorCollectionCreator } from "./utils/vector-collection-creator.js";
+import { hotUpdaterDb } from "./db/hot-updater-db.connector.js";
 
 const app = express();
 const server = createServer(app);
@@ -31,6 +33,7 @@ async function main() {
     await dbConnector();
     await agenda.start();
     await vectorCollectionCreator();
+    await hotUpdaterDb.connect();
 
     app.use(passport.initialize());
     app.use("/test", pingRoute);
@@ -41,6 +44,7 @@ async function main() {
     app.use("/chat", chatStreamRoute);
     app.use("/plans", plansRoute);
     app.use("/webhook", webhookRoute);
+    app.use("/updates", updatesRoute);
 
     server.listen(appConfig.port, () => {
       logger.info(`Server started at port : ${appConfig.port}`);
