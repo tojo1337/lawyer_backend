@@ -38,4 +38,5 @@ export const appConfig = Object.freeze({
   bucketName: process.env.BUCKET_NAME,
   adminToken: process.env.HOT_UPDATER_ADMIN_TOKEN,
   clientToken: process.env.CLIENT_API_KEY,
+  hotUpdaterStorage: process.env.HOT_UPDATER_STORAGE
 });

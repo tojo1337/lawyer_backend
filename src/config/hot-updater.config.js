@@ -14,6 +14,6 @@ export const hotUpdater = createHotUpdater({
       accessKeyId: appConfig.s3AccessKey,
       secretAccessKey: appConfig.s3SecretKey,
     },
-    bucketName: appConfig.s3Storage,
+    bucketName: appConfig.hotUpdaterStorage,
   }),
 });
