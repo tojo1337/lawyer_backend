@@ -18,6 +18,12 @@ route.use(
 );
 route.use(
   "/hot-updater",
+  (req, res, next) => {
+    if (req.get("x-api-key") !== `Bearer ${appConfig.clientToken}`) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    next();
+  },
   express.json({ limit: "1mb" }),
   toNodeHandler(hotUpdater.handlers.client),
 );

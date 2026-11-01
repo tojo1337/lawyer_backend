@@ -37,4 +37,5 @@ export const appConfig = Object.freeze({
   s3SecretKey: process.env.S3_SECRET_KEY,
   bucketName: process.env.BUCKET_NAME,
   adminToken: process.env.HOT_UPDATER_ADMIN_TOKEN,
+  clientToken: process.env.CLIENT_API_KEY,
 });

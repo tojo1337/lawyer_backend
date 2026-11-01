@@ -21,7 +21,7 @@ import { route as caseFileRoute } from "./routes/case-file.route.js";
 import { route as chatStreamRoute } from "./routes/chat-stream.route.js";
 import { route as updatesRoute } from "./routes/hot-updater.routes.js";
 import { vectorCollectionCreator } from "./utils/vector-collection-creator.js";
-import { hotUpdaterDb } from "./db/hot-updater-db.connector.js";
+import { hotUpdaterDbInstance } from "./db/hot-updater-db.connector.js";
 
 const app = express();
 const server = createServer(app);
@@ -33,7 +33,7 @@ async function main() {
     await dbConnector();
     await agenda.start();
     await vectorCollectionCreator();
-    await hotUpdaterDb.connect();
+    await hotUpdaterDbInstance.connect();
 
     app.use(passport.initialize());
     app.use("/test", pingRoute);
