@@ -6,7 +6,7 @@ import { appConfig } from "../config/app.config.js";
 const route = Router();
 
 route.use(
-  "/hot-updater/admin",
+  "/admin",
   (req, res, next) => {
     if (req.get("Authorization") !== `Bearer ${appConfig.adminToken}`) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -17,9 +17,9 @@ route.use(
   toNodeHandler(hotUpdater.handlers.admin),
 );
 route.use(
-  "/hot-updater",
+  "/ota-updates",
   (req, res, next) => {
-    if (req.get("x-api-key") !== `Bearer ${appConfig.clientToken}`) {
+    if (req.get("Authorization") !== `Bearer ${appConfig.clientToken}`) {
       return res.status(401).json({ error: "Unauthorized" });
     }
     next();
