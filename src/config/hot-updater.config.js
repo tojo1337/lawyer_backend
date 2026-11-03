@@ -9,7 +9,25 @@ if (existsSync(".env")) {
   process.loadEnvFile(".env");
 }
 
-export const client = new MongoClient(process.env.UPDATER_DB_CONNECTOR);
+/**
+ * ### This is entirely the process to perform db based migration
+ * The current file or a file like this will only be used for migration only
+ * Rest of the thing will be done by react native project itself, no need to do anything on server side
+ * Need to create a replica set for the current mongodb instance
+ * It can be done using a modified mongodb.conf file
+ * Here's the small modification which is needed
+ * replication:
+ * replSetName: rs0
+ * And it will be modified on /etc/mongod.conf and it can be done the same on docker instance
+ * Then inside mongosh do the following 
+ * rs.initiate()
+ * rs.status()
+ * restart mongodb after modification
+ */
+
+export const client = new MongoClient(process.env.UPDATER_DB_CONNECTOR, {
+  retryWrites: false,
+});
 
 await client.connect();
 
