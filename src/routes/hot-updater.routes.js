@@ -2,6 +2,7 @@ import express, { Router } from "express";
 import { toNodeHandler } from "@hot-updater/server";
 import { hotUpdater } from "../config/hot-updater.config.js";
 import { appConfig } from "../config/app.config.js";
+import { route as storageRoute } from "../routes/app-update-storage.route.js";
 
 const route = Router();
 
@@ -27,5 +28,7 @@ route.use(
   express.json({ limit: "1mb" }),
   toNodeHandler(hotUpdater.handlers.client),
 );
+
+route.use("/ota-updates-storage", storageRoute);
 
 export { route };
