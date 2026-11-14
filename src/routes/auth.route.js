@@ -151,18 +151,18 @@ route.get(
 );
 route.get("/google/callback", googleMiddleware, async (req, res) => {
   try {
-    const { email } = req?.userData ?? {};
-    if (!email)
+    const { id = '' } = req?.userData ?? {};
+    if (!id)
       return res
         .status(HttpStatus.UN_AUTHORIZED)
         .json({ message: "Malformed profile body from google" });
-    const payload = { email };
+    const payload = { id };
     const options = {
       expiresIn: "15m",
       algorithm: "HS256",
     };
     const token = jwt.sign(payload, appConfig.jwtSecret, options);
-    return res.redirect(`${appConfig.redirectUrl}?token=${token}`);
+    return res.redirect(`${appConfig.redirectUrl}/${token}`);
   } catch (err) {
     logger.error({
       url: req.originalUrl,
@@ -182,18 +182,18 @@ route.get(
 );
 route.get("/facebook/callback", facebookMiddleware, async (req, res) => {
   try {
-    const { email } = req?.userData ?? {};
-    if (!email)
+    const { id = '' } = req?.userData ?? {};
+    if (!id)
       return res
         .status(HttpStatus.UN_AUTHORIZED)
         .json({ message: "Malformed profile body from google" });
-    const payload = { email };
+    const payload = { id };
     const options = {
       expiresIn: "15m",
       algorithm: "HS256",
     };
     const token = jwt.sign(payload, appConfig.jwtSecret, options);
-    return res.redirect(`${appConfig.redirectUrl}?token=${token}`);
+    return res.redirect(`${appConfig.redirectUrl}/${token}`);
   } catch (err) {
     logger.error({
       url: req.originalUrl,
