@@ -18,6 +18,7 @@ import { route as webhookRoute } from "./routes/webhook.route.js";
 import { route as caseFileRoute } from "./routes/case-file.route.js";
 import { route as chatStreamRoute } from "./routes/chat-stream.route.js";
 import { route as updatesRoute } from "./routes/hot-updater.routes.js";
+import { routes as crashRoute } from "./routes/crash.route.js";
 import { vectorCollectionCreator } from "./utils/vector-collection-creator.js";
 
 const app = express();
@@ -41,6 +42,7 @@ async function main() {
     app.use("/plans", plansRoute);
     app.use("/webhook", webhookRoute);
     app.use("/updates", updatesRoute);
+    app.use("/crash", crashRoute);
 
     server.listen(appConfig.port, () => {
       logger.info(`Server started at port : ${appConfig.port}`);
