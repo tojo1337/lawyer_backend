@@ -4,7 +4,7 @@ import { HttpStatus } from "../enum/http-status.js";
 import { jwtMiddleware } from "../middleware/jwt.middleware.js";
 
 const routes = Router();
-routes.use(jwtMiddleware);
+routes.use(jwtMiddleware)
 
 routes.post("/crash-report", async (req, res) => {
   try {
